@@ -1,0 +1,13 @@
+## Build artifacts
+build/
+release/
+dist/
+*.exe
+
+## Node
+**/node_modules/
+frontend/dist/
+
+## Wails/Frontend caches
+frontend/.vite/
+frontend/.cache/
