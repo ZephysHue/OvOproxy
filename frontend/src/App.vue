@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { GetProfiles, StartProfile, StopProfile, AddProfile, DeleteProfile, UpdateHosts } from '../wailsjs/go/main/App'
+import { ref, onMounted } from 'vue'
+import { GetProfiles, StartProfile, StopProfile, AddProfile, DeleteProfile, ImportHostsFromDialog, ExportHostsToDialog, DedupHosts, GetHostsText, SetHostsText, RenameProfile, IsAdmin } from '../wailsjs/go/main/App'
 import { WindowMinimise, WindowToggleMaximise, Quit } from '../wailsjs/runtime/runtime'
 import ProfileCard from './components/ProfileCard.vue'
 import ProfileEditor from './components/ProfileEditor.vue'
 import AddProfileModal from './components/AddProfileModal.vue'
-
-interface HostEntry {
-  domain: string
-  ip: string
-}
+import SettingsModal from './components/SettingsModal.vue'
+import RenameProfileModal from './components/RenameProfileModal.vue'
+import { t } from './i18n'
 
 interface Profile {
   name: string
@@ -18,20 +16,18 @@ interface Profile {
   hosts_file: string
   running: boolean
   hosts: Record<string, string>
+  duplicate_domains?: Array<{ domain: string; count: number }>
+  system_hosts_active?: boolean
 }
 
 const profiles = ref<Profile[]>([])
 const selectedProfile = ref<Profile | null>(null)
 const showAddModal = ref(false)
+const showSettings = ref(false)
+const showRename = ref(false)
+const renameFrom = ref('')
 const loading = ref(false)
-
-const selectedHosts = computed<HostEntry[]>(() => {
-  if (!selectedProfile.value?.hosts) return []
-  return Object.entries(selectedProfile.value.hosts).map(([domain, ip]) => ({
-    domain,
-    ip
-  }))
-})
+const hostsText = ref('')
 
 async function loadProfiles() {
   try {
@@ -46,9 +42,23 @@ async function loadProfiles() {
   }
 }
 
+async function loadHostsText(name: string) {
+  try {
+    hostsText.value = await GetHostsText(name)
+  } catch (e) {
+    hostsText.value = ''
+  }
+}
+
 async function handleStart(name: string) {
   loading.value = true
   try {
+    const admin = await IsAdmin()
+    if (!admin) {
+      alert('需要管理员权限才能修改系统 hosts 文件。请右键以管理员身份运行。')
+      loading.value = false
+      return
+    }
     await StartProfile(name)
     await loadProfiles()
   } catch (e) {
@@ -60,6 +70,12 @@ async function handleStart(name: string) {
 async function handleStop(name: string) {
   loading.value = true
   try {
+    const admin = await IsAdmin()
+    if (!admin) {
+      alert('需要管理员权限才能修改系统 hosts 文件。请右键以管理员身份运行。')
+      loading.value = false
+      return
+    }
     await StopProfile(name)
     await loadProfiles()
   } catch (e) {
@@ -83,6 +99,7 @@ async function handleDelete(name: string) {
     await DeleteProfile(name)
     if (selectedProfile.value?.name === name) {
       selectedProfile.value = null
+      hostsText.value = ''
     }
     await loadProfiles()
   } catch (e) {
@@ -90,18 +107,67 @@ async function handleDelete(name: string) {
   }
 }
 
-async function handleUpdateHosts(entries: HostEntry[]) {
-  if (!selectedProfile.value) return
+async function handleSaveText(name: string, text: string) {
   try {
-    await UpdateHosts(selectedProfile.value.name, entries)
+    await SetHostsText(name, text)
     await loadProfiles()
+    await loadHostsText(name)
   } catch (e) {
-    console.error('Failed to update hosts:', e)
+    console.error('Failed to save hosts text:', e)
+  }
+}
+
+async function handleImportHosts(name: string) {
+  try {
+    await ImportHostsFromDialog(name)
+    await loadProfiles()
+    await loadHostsText(name)
+  } catch (e) {
+    console.error('Failed to import hosts:', e)
+  }
+}
+
+async function handleExportHosts(name: string) {
+  try {
+    await ExportHostsToDialog(name)
+  } catch (e) {
+    console.error('Failed to export hosts:', e)
+  }
+}
+
+async function handleDedup(name: string) {
+  try {
+    await DedupHosts(name)
+    await loadProfiles()
+    await loadHostsText(name)
+  } catch (e) {
+    console.error('Failed to dedup hosts:', e)
+  }
+}
+
+function openRename(name: string) {
+  renameFrom.value = name
+  showRename.value = true
+}
+
+async function handleRename(newName: string) {
+  try {
+    await RenameProfile(renameFrom.value, newName)
+    showRename.value = false
+    await loadProfiles()
+    const updated = profiles.value.find(p => p.name === newName)
+    if (updated) {
+      selectedProfile.value = updated
+      await loadHostsText(updated.name)
+    }
+  } catch (e) {
+    console.error('Failed to rename profile:', e)
   }
 }
 
 function selectProfile(profile: Profile) {
   selectedProfile.value = profile
+  loadHostsText(profile.name)
 }
 
 onMounted(() => {
@@ -119,9 +185,15 @@ onMounted(() => {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
           </svg>
         </div>
-        <span class="text-white/90 font-medium text-sm">Multi-Host Proxy</span>
+        <span class="text-white/90 font-medium text-sm">{{ t('appTitle') }}</span>
       </div>
       <div class="flex items-center">
+        <button class="titlebar-button" @click="showSettings = true" :title="t('settings')">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
         <button class="titlebar-button" @click="WindowMinimise">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
@@ -145,7 +217,7 @@ onMounted(() => {
       <!-- Left Panel: Profile List -->
       <div class="w-80 flex flex-col gap-4">
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-white/90">Profiles</h2>
+          <h2 class="text-lg font-semibold text-white/90">{{ t('profiles') }}</h2>
           <button 
             class="glass-button text-sm text-blue-300 hover:text-blue-200"
             @click="showAddModal = true"
@@ -154,7 +226,7 @@ onMounted(() => {
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
               </svg>
-              Add
+              {{ t('add') }}
             </span>
           </button>
         </div>
@@ -177,8 +249,8 @@ onMounted(() => {
             <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
             </svg>
-            <p>No profiles yet</p>
-            <p class="text-sm mt-1">Click "Add" to create one</p>
+            <p>{{ t('noProfiles') }}</p>
+            <p class="text-sm mt-1">{{ t('clickAddToCreate') }}</p>
           </div>
         </div>
       </div>
@@ -188,11 +260,16 @@ onMounted(() => {
         <ProfileEditor
           v-if="selectedProfile"
           :profile="selectedProfile"
-          :hosts="selectedHosts"
-          @update-hosts="handleUpdateHosts"
+          :hosts-text="hostsText"
+          :duplicates="selectedProfile.duplicate_domains || []"
+          @save-text="handleSaveText"
           @delete="handleDelete"
           @start="handleStart"
           @stop="handleStop"
+          @import-hosts="handleImportHosts"
+          @export-hosts="handleExportHosts"
+          @dedup="handleDedup"
+          @rename="openRename"
         />
 
         <div 
@@ -203,7 +280,7 @@ onMounted(() => {
             <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/>
             </svg>
-            <p class="text-lg">Select a profile to edit</p>
+            <p class="text-lg">{{ t('selectProfile') }}</p>
           </div>
         </div>
       </div>
@@ -214,6 +291,15 @@ onMounted(() => {
       :show="showAddModal"
       @close="showAddModal = false"
       @add="handleAdd"
+    />
+
+    <SettingsModal :show="showSettings" @close="showSettings = false" />
+
+    <RenameProfileModal
+      :show="showRename"
+      :current-name="renameFrom"
+      @close="showRename = false"
+      @rename="handleRename"
     />
   </div>
 </template>

@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { t } from '../i18n'
+
 interface Profile {
   name: string
   listen_ip: string
   port: number
   running: boolean
+  system_hosts_active?: boolean
 }
 
 const props = defineProps<{
@@ -54,7 +57,7 @@ function handleToggle(e: Event) {
           : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30'"
         @click="handleToggle"
       >
-        {{ profile.running ? 'Stop' : 'Start' }}
+        {{ profile.running ? t('stop') : t('start') }}
       </button>
     </div>
   </div>

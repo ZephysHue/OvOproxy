@@ -4,11 +4,25 @@ import {main} from '../models';
 
 export function AddProfile(arg1:string,arg2:string,arg3:number):Promise<void>;
 
+export function DedupHosts(arg1:string):Promise<void>;
+
 export function DeleteProfile(arg1:string):Promise<void>;
+
+export function ExportHostsToDialog(arg1:string):Promise<void>;
+
+export function GetHostsText(arg1:string):Promise<string>;
 
 export function GetProfiles():Promise<Array<main.ProfileState>>;
 
+export function ImportHostsFromDialog(arg1:string):Promise<void>;
+
+export function IsAdmin():Promise<boolean>;
+
 export function LoadConfig():Promise<void>;
+
+export function RenameProfile(arg1:string,arg2:string):Promise<void>;
+
+export function SetHostsText(arg1:string,arg2:string):Promise<void>;
 
 export function StartProfile(arg1:string):Promise<void>;
 

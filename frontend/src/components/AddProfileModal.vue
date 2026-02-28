@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { t } from '../i18n'
 
 const props = defineProps<{
   show: boolean
@@ -26,15 +27,15 @@ watch(() => props.show, (show) => {
 
 function handleSubmit() {
   if (!name.value.trim()) {
-    error.value = 'Profile name is required'
+    error.value = t('profileNameRequired')
     return
   }
   if (!ip.value.trim()) {
-    error.value = 'Listen IP is required'
+    error.value = t('listenIPRequired')
     return
   }
   if (port.value < 1 || port.value > 65535) {
-    error.value = 'Port must be between 1 and 65535'
+    error.value = t('portRangeError')
     return
   }
   
@@ -51,14 +52,14 @@ function handleSubmit() {
       >
         <!-- Backdrop -->
         <div 
-          class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+          class="absolute inset-0 bg-black/60"
           @click="emit('close')"
         />
 
         <!-- Modal -->
         <div class="relative glass-card w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-semibold text-white/90">New Profile</h3>
+            <h3 class="text-xl font-semibold text-white/90">{{ t('newProfile') }}</h3>
             <button
               class="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all"
               @click="emit('close')"
@@ -71,7 +72,7 @@ function handleSubmit() {
 
           <form @submit.prevent="handleSubmit" class="space-y-4">
             <div>
-              <label class="block text-sm text-white/60 mb-2">Profile Name</label>
+              <label class="block text-sm text-white/60 mb-2">{{ t('profileName') }}</label>
               <input
                 v-model="name"
                 type="text"
@@ -83,7 +84,7 @@ function handleSubmit() {
 
             <div class="flex gap-4">
               <div class="flex-1">
-                <label class="block text-sm text-white/60 mb-2">Listen IP</label>
+                <label class="block text-sm text-white/60 mb-2">{{ t('listenIP') }}</label>
                 <input
                   v-model="ip"
                   type="text"
@@ -92,7 +93,7 @@ function handleSubmit() {
                 />
               </div>
               <div class="w-32">
-                <label class="block text-sm text-white/60 mb-2">Port</label>
+                <label class="block text-sm text-white/60 mb-2">{{ t('port') }}</label>
                 <input
                   v-model.number="port"
                   type="number"
@@ -113,13 +114,13 @@ function handleSubmit() {
                 class="glass-button text-white/60"
                 @click="emit('close')"
               >
-                Cancel
+                {{ t('cancel') }}
               </button>
               <button
                 type="submit"
                 class="glass-button bg-blue-500/30 text-blue-200 hover:bg-blue-500/40 border-blue-400/30"
               >
-                Create Profile
+                {{ t('createProfile') }}
               </button>
             </div>
           </form>
