@@ -14,6 +14,10 @@ export function GetHostsText(arg1:string):Promise<string>;
 
 export function GetProfiles():Promise<Array<main.ProfileState>>;
 
+export function GetProxyAddress(arg1:string):Promise<string>;
+
+export function GetProxyLogs(arg1:string,arg2:number):Promise<Array<main.ProxyLogEntry>>;
+
 export function ImportHostsFromDialog(arg1:string):Promise<void>;
 
 export function IsAdmin():Promise<boolean>;

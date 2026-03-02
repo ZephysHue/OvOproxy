@@ -26,6 +26,14 @@ export function GetProfiles() {
   return window['go']['main']['App']['GetProfiles']();
 }
 
+export function GetProxyAddress(arg1) {
+  return window['go']['main']['App']['GetProxyAddress'](arg1);
+}
+
+export function GetProxyLogs(arg1, arg2) {
+  return window['go']['main']['App']['GetProxyLogs'](arg1, arg2);
+}
+
 export function ImportHostsFromDialog(arg1) {
   return window['go']['main']['App']['ImportHostsFromDialog'](arg1);
 }

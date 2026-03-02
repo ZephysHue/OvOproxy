@@ -13,23 +13,27 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"zephy/internal/config"
 	"zephy/internal/hosts"
+	"zephy/internal/proxymanager"
 	"zephy/internal/winhosts"
 )
 
 type App struct {
-	ctx      context.Context
-	profiles []ProfileState
-	mu       sync.RWMutex
-	exeDir   string
-	allowQuit bool
+	ctx          context.Context
+	profiles     []ProfileState
+	mu           sync.RWMutex
+	exeDir       string
+	allowQuit    bool
+	proxyManager *proxymanager.Manager
 }
 
 type ProfileState struct {
 	config.Profile
-	Running          bool              `json:"running"`
-	Hosts            map[string]string `json:"hosts"`
-	DuplicateDomains []DuplicateDomain `json:"duplicate_domains"`
-	SystemHostsActive bool             `json:"system_hosts_active"`
+	Running           bool              `json:"running"`
+	Hosts             map[string]string `json:"hosts"`
+	DuplicateDomains  []DuplicateDomain `json:"duplicate_domains"`
+	SystemHostsActive bool              `json:"system_hosts_active"`
+	ProxyActive       bool              `json:"proxy_active"`
+	ProxyError        string            `json:"proxy_error"`
 }
 
 type HostEntry struct {
@@ -48,15 +52,62 @@ func NewApp() *App {
 		exeDir = filepath.Dir(exe)
 	}
 	return &App{
-		profiles: []ProfileState{},
-		exeDir:   exeDir,
+		profiles:     []ProfileState{},
+		exeDir:       exeDir,
+		proxyManager: proxymanager.New(),
 	}
 }
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.LoadConfig()
+	a.startAllProxies()
+	a.syncHostsEnabledState()
 	a.startTray()
+}
+
+func (a *App) startAllProxies() {
+	a.mu.RLock()
+	profiles := make([]ProfileState, len(a.profiles))
+	copy(profiles, a.profiles)
+	a.mu.RUnlock()
+
+	for _, p := range profiles {
+		_ = a.proxyManager.StartProxy(p.Name, p.ListenIP, p.Port, p.Hosts)
+	}
+	a.refreshProxyStatus()
+}
+
+func (a *App) refreshProxyStatus() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	status := a.proxyManager.GetAllStatus()
+	for i := range a.profiles {
+		if s, ok := status[a.profiles[i].Name]; ok {
+			a.profiles[i].ProxyActive = s.Active
+			a.profiles[i].ProxyError = s.LastErr
+		} else {
+			a.profiles[i].ProxyActive = false
+			a.profiles[i].ProxyError = ""
+		}
+	}
+}
+
+func (a *App) syncHostsEnabledState() {
+	enabled, err := winhosts.GetEnabledProfiles()
+	if err != nil {
+		return
+	}
+	enabledSet := make(map[string]bool)
+	for _, id := range enabled {
+		enabledSet[id] = true
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for i := range a.profiles {
+		a.profiles[i].SystemHostsActive = enabledSet[a.profiles[i].Name]
+		a.profiles[i].Running = a.profiles[i].SystemHostsActive
+	}
 }
 
 func (a *App) beforeClose(ctx context.Context) bool {
@@ -71,10 +122,12 @@ func (a *App) beforeClose(ctx context.Context) bool {
 }
 
 func (a *App) shutdown(ctx context.Context) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	a.proxyManager.StopAll()
 
-	// no-op for hosts mode
+	admin, _ := winhosts.IsAdmin()
+	if admin {
+		_ = winhosts.RemoveAllZephyBlocks(true)
+	}
 }
 
 func (a *App) getConfigPath() string {
@@ -134,20 +187,26 @@ func (a *App) refreshProfileHostsLocked(i int) {
 	}
 	sort.Slice(dups, func(a1, b1 int) bool { return dups[a1].Domain < dups[b1].Domain })
 	a.profiles[i].DuplicateDomains = dups
+
+	a.proxyManager.UpdateHostsRules(a.profiles[i].Name, a.profiles[i].Hosts)
 }
 
 func (a *App) GetProfiles() []ProfileState {
+	a.refreshProxyStatus()
+
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
 	result := make([]ProfileState, len(a.profiles))
 	for i, p := range a.profiles {
 		result[i] = ProfileState{
-			Profile:         p.Profile,
-			Running:         p.Running,
-			Hosts:           p.Hosts,
-			DuplicateDomains: p.DuplicateDomains,
+			Profile:           p.Profile,
+			Running:           p.Running,
+			Hosts:             p.Hosts,
+			DuplicateDomains:  p.DuplicateDomains,
 			SystemHostsActive: p.SystemHostsActive,
+			ProxyActive:       p.ProxyActive,
+			ProxyError:        p.ProxyError,
 		}
 	}
 	return result
@@ -205,20 +264,29 @@ func (a *App) IsAdmin() (bool, error) {
 	return winhosts.IsAdmin()
 }
 
-// StartProfile == 启用 Profile：写入系统 hosts 的 Zephy 管理块
+// StartProfile == 启用 Profile：写入系统 hosts 的该 Profile 标记块
+// 默认单启用策略：启用新 Profile 时自动禁用其他 enabled 的 Profile
 func (a *App) StartProfile(name string) error {
 	a.mu.RLock()
 	var hostsPath string
+	var proxyActive bool
+	var proxyErr string
 	for i := range a.profiles {
 		if a.profiles[i].Name == name {
 			hostsPath = a.profiles[i].HostsFile
+			proxyActive = a.profiles[i].ProxyActive
+			proxyErr = a.profiles[i].ProxyError
 			break
 		}
 	}
 	exeDir := a.exeDir
 	a.mu.RUnlock()
+
 	if hostsPath == "" {
 		return fmt.Errorf("profile %s not found", name)
+	}
+	if !proxyActive {
+		return fmt.Errorf("代理端口未启动: %s", proxyErr)
 	}
 	if !filepath.IsAbs(hostsPath) {
 		hostsPath = filepath.Join(exeDir, hostsPath)
@@ -233,14 +301,27 @@ func (a *App) StartProfile(name string) error {
 	if err != nil {
 		return fmt.Errorf("parse profile hosts: %w", err)
 	}
-	// Dedup keep-last, then materialize as "ip domain"
+
 	dedup := hosts.DedupEntriesKeepLast(entries)
 	lines := make([]string, 0, len(dedup))
 	for _, e := range dedup {
 		lines = append(lines, fmt.Sprintf("%s %s", e.IP, e.Domain))
 	}
 
-	if err := winhosts.ApplyManagedBlock(lines, true); err != nil {
+	a.mu.RLock()
+	var otherEnabled []string
+	for i := range a.profiles {
+		if a.profiles[i].SystemHostsActive && a.profiles[i].Name != name {
+			otherEnabled = append(otherEnabled, a.profiles[i].Name)
+		}
+	}
+	a.mu.RUnlock()
+
+	for _, other := range otherEnabled {
+		_ = winhosts.RemoveProfileBlock(other, false)
+	}
+
+	if err := winhosts.ApplyProfileBlock(name, lines, true); err != nil {
 		return err
 	}
 
@@ -253,29 +334,32 @@ func (a *App) StartProfile(name string) error {
 	return nil
 }
 
-// StopProfile == 关闭 Profile：移除 Zephy 管理块
+// StopProfile == 关闭 Profile：移除该 Profile 的 hosts 标记块
 func (a *App) StopProfile(name string) error {
-	if err := winhosts.RemoveManagedBlock(true); err != nil {
+	if err := winhosts.RemoveProfileBlock(name, true); err != nil {
 		return err
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	for i := range a.profiles {
-		a.profiles[i].SystemHostsActive = false
-		a.profiles[i].Running = false
+		if a.profiles[i].Name == name {
+			a.profiles[i].SystemHostsActive = false
+			a.profiles[i].Running = false
+		}
 	}
 	return nil
 }
 
 func (a *App) AddProfile(name, listenIP string, port int) error {
 	a.mu.Lock()
-	defer a.mu.Unlock()
 
 	for _, p := range a.profiles {
 		if p.Name == name {
+			a.mu.Unlock()
 			return fmt.Errorf("profile %s already exists", name)
 		}
 		if p.ListenIP == listenIP && p.Port == port {
+			a.mu.Unlock()
 			return fmt.Errorf("address %s:%d already in use", listenIP, port)
 		}
 	}
@@ -284,9 +368,11 @@ func (a *App) AddProfile(name, listenIP string, port int) error {
 	hostsPath := filepath.Join(a.exeDir, hostsFile)
 
 	if err := os.MkdirAll(filepath.Dir(hostsPath), 0755); err != nil {
+		a.mu.Unlock()
 		return err
 	}
 	if err := os.WriteFile(hostsPath, []byte("# Hosts for "+name+"\n"), 0644); err != nil {
+		a.mu.Unlock()
 		return err
 	}
 
@@ -302,22 +388,36 @@ func (a *App) AddProfile(name, listenIP string, port int) error {
 	}
 	a.profiles = append(a.profiles, newProfile)
 
-	return a.saveConfig()
+	if err := a.saveConfig(); err != nil {
+		a.mu.Unlock()
+		return err
+	}
+	hostsRules := newProfile.Hosts
+	a.mu.Unlock()
+
+	_ = a.proxyManager.StartProxy(name, listenIP, port, hostsRules)
+	a.refreshProxyStatus()
+	return nil
 }
 
 func (a *App) DeleteProfile(name string) error {
 	a.mu.Lock()
-	defer a.mu.Unlock()
 
 	for i := range a.profiles {
 		if a.profiles[i].Name == name {
-			if a.profiles[i].Running {
+			if a.profiles[i].Running || a.profiles[i].SystemHostsActive {
+				a.mu.Unlock()
 				return fmt.Errorf("cannot delete running profile")
 			}
 			a.profiles = append(a.profiles[:i], a.profiles[i+1:]...)
-			return a.saveConfig()
+			err := a.saveConfig()
+			a.mu.Unlock()
+
+			a.proxyManager.StopProxy(name)
+			return err
 		}
 	}
+	a.mu.Unlock()
 	return fmt.Errorf("profile %s not found", name)
 }
 
@@ -521,6 +621,42 @@ func (a *App) DedupHosts(profileName string) error {
 		return nil
 	}
 	return fmt.Errorf("profile %s not found", profileName)
+}
+
+func (a *App) GetProxyAddress(profileName string) (string, error) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	for _, p := range a.profiles {
+		if p.Name == profileName {
+			return fmt.Sprintf("%s:%d", p.ListenIP, p.Port), nil
+		}
+	}
+	return "", fmt.Errorf("profile %s not found", profileName)
+}
+
+type ProxyLogEntry struct {
+	Time       string `json:"time"`
+	Method     string `json:"method"`
+	Host       string `json:"host"`
+	ResolvedIP string `json:"resolved_ip"`
+	Success    bool   `json:"success"`
+	Error      string `json:"error,omitempty"`
+}
+
+func (a *App) GetProxyLogs(profileName string, limit int) []ProxyLogEntry {
+	logs := a.proxyManager.GetLogs(profileName, limit)
+	result := make([]ProxyLogEntry, len(logs))
+	for i, l := range logs {
+		result[i] = ProxyLogEntry{
+			Time:       l.Time.Format("15:04:05"),
+			Method:     l.Method,
+			Host:       l.Host,
+			ResolvedIP: l.ResolvedIP,
+			Success:    l.Success,
+			Error:      l.Error,
+		}
+	}
+	return result
 }
 
 func (a *App) saveConfig() error {

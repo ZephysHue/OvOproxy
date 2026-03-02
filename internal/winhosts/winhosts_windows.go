@@ -4,11 +4,11 @@ package winhosts
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -16,17 +16,23 @@ import (
 
 const (
 	SystemHostsPath = `C:\Windows\System32\drivers\etc\hosts`
-	StartMarker     = "# >>> Zephy Managed Start"
-	EndMarker       = "# <<< Zephy Managed End"
+	startMarkerPrefix = "# >>> Zephy Profile:"
+	endMarkerPrefix   = "# <<< Zephy Profile:"
 )
 
+func profileStartMarker(profileId string) string {
+	return startMarkerPrefix + profileId
+}
+
+func profileEndMarker(profileId string) string {
+	return endMarkerPrefix + profileId
+}
+
 func IsAdmin() (bool, error) {
-	// shell32!IsUserAnAdmin
 	shell32 := syscall.NewLazyDLL("shell32.dll")
 	proc := shell32.NewProc("IsUserAnAdmin")
 	r, _, err := proc.Call()
 	if r == 0 {
-		// err may be "operation completed successfully"
 		if err != syscall.Errno(0) {
 			return false, err
 		}
@@ -35,15 +41,15 @@ func IsAdmin() (bool, error) {
 	return true, nil
 }
 
-func ApplyManagedBlock(lines []string, flushDNS bool) error {
-	return updateManagedBlock(lines, flushDNS)
+func ApplyProfileBlock(profileId string, lines []string, flushDNS bool) error {
+	return updateProfileBlock(profileId, lines, flushDNS)
 }
 
-func RemoveManagedBlock(flushDNS bool) error {
-	return updateManagedBlock(nil, flushDNS)
+func RemoveProfileBlock(profileId string, flushDNS bool) error {
+	return updateProfileBlock(profileId, nil, flushDNS)
 }
 
-func updateManagedBlock(lines []string, flushDNS bool) error {
+func RemoveAllZephyBlocks(flushDNS bool) error {
 	admin, err := IsAdmin()
 	if err != nil {
 		return fmt.Errorf("admin check failed: %w", err)
@@ -57,10 +63,100 @@ func updateManagedBlock(lines []string, flushDNS bool) error {
 		return fmt.Errorf("read system hosts: %w", err)
 	}
 
-	updated, changed, err := replaceBlock(orig, lines)
+	useCRLF := bytes.Contains(orig, []byte("\r\n"))
+	text := string(bytes.ReplaceAll(orig, []byte("\r\n"), []byte("\n")))
+
+	cleaned := removeAllProfileBlocks(text)
+
+	if cleaned == text {
+		return nil
+	}
+
+	backupPath, err := backupHosts(orig)
 	if err != nil {
 		return err
 	}
+
+	out := cleaned
+	if useCRLF {
+		out = strings.ReplaceAll(out, "\n", "\r\n")
+	}
+
+	if err := os.WriteFile(SystemHostsPath, []byte(out), 0644); err != nil {
+		_ = os.WriteFile(SystemHostsPath, orig, 0644)
+		return fmt.Errorf("write system hosts failed (restored backup=%s): %w", backupPath, err)
+	}
+
+	if flushDNS {
+		_ = exec.Command("ipconfig", "/flushdns").Run()
+	}
+	return nil
+}
+
+func removeAllProfileBlocks(text string) string {
+	lines := strings.Split(text, "\n")
+	var result []string
+	inBlock := false
+	var currentProfileId string
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, startMarkerPrefix) {
+			inBlock = true
+			currentProfileId = strings.TrimPrefix(trimmed, startMarkerPrefix)
+			continue
+		}
+		if inBlock && strings.HasPrefix(trimmed, endMarkerPrefix) {
+			endId := strings.TrimPrefix(trimmed, endMarkerPrefix)
+			if endId == currentProfileId {
+				inBlock = false
+				currentProfileId = ""
+				continue
+			}
+		}
+		if !inBlock {
+			result = append(result, line)
+		}
+	}
+	return strings.Join(result, "\n")
+}
+
+func GetEnabledProfiles() ([]string, error) {
+	data, err := os.ReadFile(SystemHostsPath)
+	if err != nil {
+		return nil, err
+	}
+	text := string(bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n")))
+
+	var ids []string
+	lines := strings.Split(text, "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, startMarkerPrefix) {
+			id := strings.TrimPrefix(trimmed, startMarkerPrefix)
+			if id != "" {
+				ids = append(ids, id)
+			}
+		}
+	}
+	return ids, nil
+}
+
+func updateProfileBlock(profileId string, lines []string, flushDNS bool) error {
+	admin, err := IsAdmin()
+	if err != nil {
+		return fmt.Errorf("admin check failed: %w", err)
+	}
+	if !admin {
+		return fmt.Errorf("需要管理员权限才能修改系统 hosts 文件")
+	}
+
+	orig, err := os.ReadFile(SystemHostsPath)
+	if err != nil {
+		return fmt.Errorf("read system hosts: %w", err)
+	}
+
+	updated, changed := replaceProfileBlock(orig, profileId, lines)
 	if !changed {
 		return nil
 	}
@@ -91,55 +187,29 @@ func backupHosts(orig []byte) (string, error) {
 	return backup, nil
 }
 
-func replaceBlock(orig []byte, lines []string) ([]byte, bool, error) {
-	// Preserve original line endings
+func replaceProfileBlock(orig []byte, profileId string, lines []string) ([]byte, bool) {
 	useCRLF := bytes.Contains(orig, []byte("\r\n"))
-	norm := bytes.ReplaceAll(orig, []byte("\r\n"), []byte("\n"))
-	text := string(norm)
+	text := string(bytes.ReplaceAll(orig, []byte("\r\n"), []byte("\n")))
 
-	startIdx := strings.Index(text, StartMarker)
-	endIdx := strings.Index(text, EndMarker)
+	startMarker := profileStartMarker(profileId)
+	endMarker := profileEndMarker(profileId)
 
-	if (startIdx >= 0) != (endIdx >= 0) {
-		return nil, false, errors.New("system hosts: Zephy 标记块不完整（只有 start 或只有 end）")
-	}
+	profileRegex := regexp.MustCompile(
+		`(?m)^` + regexp.QuoteMeta(startMarker) + `\r?\n[\s\S]*?` + regexp.QuoteMeta(endMarker) + `\r?\n?`,
+	)
+	base := profileRegex.ReplaceAllString(text, "")
 
-	stripBlock := func(s string) string {
-		if startIdx < 0 {
-			return s
-		}
-		// find line start of StartMarker
-		startLineStart := strings.LastIndex(s[:startIdx], "\n")
-		if startLineStart < 0 {
-			startLineStart = 0
-		} else {
-			startLineStart += 1
-		}
-		// find line end of EndMarker
-		endLineEnd := strings.Index(s[endIdx:], "\n")
-		if endLineEnd < 0 {
-			endLineEnd = len(s)
-		} else {
-			endLineEnd = endIdx + endLineEnd + 1
-		}
-		return s[:startLineStart] + s[endLineEnd:]
-	}
-
-	base := stripBlock(text)
-
-	// If removing: just return base
 	if lines == nil {
 		out := base
 		if useCRLF {
 			out = strings.ReplaceAll(out, "\n", "\r\n")
 		}
-		if out == string(norm) {
-			return orig, false, nil
+		if out == string(bytes.ReplaceAll(orig, []byte("\r\n"), []byte("\n"))) {
+			return orig, false
 		}
-		return []byte(out), true, nil
+		return []byte(out), true
 	}
 
-	// Build new managed block
 	clean := make([]string, 0, len(lines))
 	for _, l := range lines {
 		l = strings.TrimSpace(l)
@@ -148,9 +218,16 @@ func replaceBlock(orig []byte, lines []string) ([]byte, bool, error) {
 		}
 		clean = append(clean, l)
 	}
-	block := StartMarker + "\n" + strings.Join(clean, "\n") + "\n" + EndMarker + "\n"
+	if len(clean) == 0 {
+		out := base
+		if useCRLF {
+			out = strings.ReplaceAll(out, "\n", "\r\n")
+		}
+		return []byte(out), base != text
+	}
 
-	// Append at end, preserving existing trailing newline behavior
+	block := startMarker + "\n" + strings.Join(clean, "\n") + "\n" + endMarker + "\n"
+
 	out := base
 	if out != "" && !strings.HasSuffix(out, "\n") {
 		out += "\n"
@@ -160,9 +237,15 @@ func replaceBlock(orig []byte, lines []string) ([]byte, bool, error) {
 	if useCRLF {
 		out = strings.ReplaceAll(out, "\n", "\r\n")
 	}
-	if out == string(norm) {
-		return orig, false, nil
-	}
-	return []byte(out), true, nil
+
+	return []byte(out), true
+}
+
+func ApplyManagedBlock(lines []string, flushDNS bool) error {
+	return ApplyProfileBlock("default", lines, flushDNS)
+}
+
+func RemoveManagedBlock(flushDNS bool) error {
+	return RemoveProfileBlock("default", flushDNS)
 }
 

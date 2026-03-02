@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { GetProfiles, StartProfile, StopProfile, AddProfile, DeleteProfile, ImportHostsFromDialog, ExportHostsToDialog, DedupHosts, GetHostsText, SetHostsText, RenameProfile, IsAdmin } from '../wailsjs/go/main/App'
+import { ref, onMounted, computed } from 'vue'
+import { GetProfiles, StartProfile, StopProfile, AddProfile, DeleteProfile, ImportHostsFromDialog, ExportHostsToDialog, DedupHosts, GetHostsText, SetHostsText, RenameProfile, IsAdmin, GetProxyAddress } from '../wailsjs/go/main/App'
 import { WindowMinimise, WindowToggleMaximise, Quit } from '../wailsjs/runtime/runtime'
 import ProfileCard from './components/ProfileCard.vue'
 import ProfileEditor from './components/ProfileEditor.vue'
@@ -18,6 +18,8 @@ interface Profile {
   hosts: Record<string, string>
   duplicate_domains?: Array<{ domain: string; count: number }>
   system_hosts_active?: boolean
+  proxy_active?: boolean
+  proxy_error?: string
 }
 
 const profiles = ref<Profile[]>([])
@@ -28,6 +30,23 @@ const showRename = ref(false)
 const renameFrom = ref('')
 const loading = ref(false)
 const hostsText = ref('')
+const searchQuery = ref('')
+
+const filteredProfiles = computed(() => {
+  const q = searchQuery.value.toLowerCase().trim()
+  if (!q) return profiles.value
+  return profiles.value.filter(p => {
+    if (p.name.toLowerCase().includes(q)) return true
+    if (String(p.port).includes(q)) return true
+    for (const domain of Object.keys(p.hosts || {})) {
+      if (domain.toLowerCase().includes(q)) return true
+    }
+    for (const ip of Object.values(p.hosts || {})) {
+      if (ip.includes(q)) return true
+    }
+    return false
+  })
+})
 
 async function loadProfiles() {
   try {
@@ -61,8 +80,9 @@ async function handleStart(name: string) {
     }
     await StartProfile(name)
     await loadProfiles()
-  } catch (e) {
+  } catch (e: any) {
     console.error('Failed to start:', e)
+    alert(e?.message || String(e))
   }
   loading.value = false
 }
@@ -231,9 +251,22 @@ onMounted(() => {
           </button>
         </div>
 
+        <!-- Search Box -->
+        <div class="relative">
+          <input
+            v-model="searchQuery"
+            type="text"
+            :placeholder="t('searchPlaceholder')"
+            class="w-full glass-input text-sm pl-9"
+          />
+          <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+
         <div class="flex-1 overflow-y-auto scrollbar-thin space-y-3 pr-2">
           <ProfileCard
-            v-for="profile in profiles"
+            v-for="profile in filteredProfiles"
             :key="profile.name"
             :profile="profile"
             :active="selectedProfile?.name === profile.name"
@@ -241,6 +274,13 @@ onMounted(() => {
             @start="handleStart"
             @stop="handleStop"
           />
+
+          <div 
+            v-if="filteredProfiles.length === 0 && profiles.length > 0"
+            class="glass-card p-8 text-center text-white/50"
+          >
+            <p>{{ t('noMatches') }}</p>
+          </div>
 
           <div 
             v-if="profiles.length === 0"

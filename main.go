@@ -2,20 +2,30 @@ package main
 
 import (
 	"embed"
+	"os"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
+
+	"zephy/internal/singleinstance"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
+	acquired, err := singleinstance.Acquire("Global\\ZephyHostsManager_Mutex")
+	if err == nil && !acquired {
+		println("Another instance is already running.")
+		os.Exit(0)
+	}
+	defer singleinstance.Release()
+
 	app := NewApp()
 
-	err := wails.Run(&options.App{
+	err = wails.Run(&options.App{
 		Title:     "Multi-Host Proxy",
 		Width:     1100,
 		Height:    700,

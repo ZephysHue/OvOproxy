@@ -37,6 +37,8 @@ export namespace main {
 	    hosts: Record<string, string>;
 	    duplicate_domains: DuplicateDomain[];
 	    system_hosts_active: boolean;
+	    proxy_active: boolean;
+	    proxy_error: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ProfileState(source);
@@ -52,6 +54,8 @@ export namespace main {
 	        this.hosts = source["hosts"];
 	        this.duplicate_domains = this.convertValues(source["duplicate_domains"], DuplicateDomain);
 	        this.system_hosts_active = source["system_hosts_active"];
+	        this.proxy_active = source["proxy_active"];
+	        this.proxy_error = source["proxy_error"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -71,6 +75,28 @@ export namespace main {
 		    }
 		    return a;
 		}
+	}
+	export class ProxyLogEntry {
+	    time: string;
+	    method: string;
+	    host: string;
+	    resolved_ip: string;
+	    success: boolean;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ProxyLogEntry(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.time = source["time"];
+	        this.method = source["method"];
+	        this.host = source["host"];
+	        this.resolved_ip = source["resolved_ip"];
+	        this.success = source["success"];
+	        this.error = source["error"];
+	    }
 	}
 
 }
