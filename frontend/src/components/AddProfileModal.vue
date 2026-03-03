@@ -4,6 +4,7 @@ import { t } from '../i18n'
 
 const props = defineProps<{
   show: boolean
+  usedPorts?: number[]
 }>()
 
 const emit = defineEmits<{
@@ -16,11 +17,23 @@ const ip = ref('127.0.0.1')
 const port = ref(8080)
 const error = ref('')
 
+function nextAvailablePort(usedPorts: number[]) {
+  const used = new Set(usedPorts)
+  let candidate = 8080
+  while (used.has(candidate) && candidate <= 65535) {
+    candidate += 1
+  }
+  if (candidate > 65535) {
+    return 8080
+  }
+  return candidate
+}
+
 watch(() => props.show, (show) => {
   if (show) {
     name.value = ''
     ip.value = '127.0.0.1'
-    port.value = 8080
+    port.value = nextAvailablePort(props.usedPorts || [])
     error.value = ''
   }
 })

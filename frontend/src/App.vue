@@ -48,6 +48,8 @@ const filteredProfiles = computed(() => {
   })
 })
 
+const usedPorts = computed(() => profiles.value.map(p => p.port))
+
 async function loadProfiles() {
   try {
     const data = await GetProfiles()
@@ -329,6 +331,7 @@ onMounted(() => {
     <!-- Add Profile Modal -->
     <AddProfileModal
       :show="showAddModal"
+      :used-ports="usedPorts"
       @close="showAddModal = false"
       @add="handleAdd"
     />
