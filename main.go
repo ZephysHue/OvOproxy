@@ -16,16 +16,18 @@ import (
 var assets embed.FS
 
 func main() {
-	acquired, err := singleinstance.Acquire("Global\\ZephyHostsManager_Mutex")
-	if err == nil && !acquired {
-		println("Another instance is already running.")
-		os.Exit(0)
+	if os.Getenv("ZEPHY_SKIP_SINGLE_INSTANCE") != "1" {
+		acquired, err := singleinstance.Acquire("Global\\ZephyHostsManager_Mutex")
+		if err == nil && !acquired {
+			println("Another instance is already running.")
+			os.Exit(0)
+		}
+		defer singleinstance.Release()
 	}
-	defer singleinstance.Release()
 
 	app := NewApp()
 
-	err = wails.Run(&options.App{
+	err := wails.Run(&options.App{
 		Title:     "Multi-Host Proxy",
 		Width:     1100,
 		Height:    700,

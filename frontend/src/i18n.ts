@@ -88,6 +88,12 @@ const dict = {
     matchCount: '第 {current} / {total} 项',
     hostsWarningPort: '警告：域名不应包含端口号',
     hostsWarningLoopback: '警告：使用 127.0.0.1 或 0.0.0.0 可能导致循环',
+    rulesPanel: '规则开关',
+    syntaxPreview: '语法预览',
+    invalidRule: '格式异常',
+    line: '行',
+    adminRequiredBanner: '当前不是管理员权限：可查看和编辑，但启用/禁用 Hosts 会失败',
+    adminRequiredAction: '请右键以管理员身份运行程序',
   },
   en: {
     appTitle: 'Multi-Host Proxy',
@@ -171,6 +177,12 @@ const dict = {
     matchCount: '{current} of {total}',
     hostsWarningPort: 'Warning: Domain should not include port number',
     hostsWarningLoopback: 'Warning: Using 127.0.0.1 or 0.0.0.0 may cause loops',
+    rulesPanel: 'Rule Toggle',
+    syntaxPreview: 'Syntax Preview',
+    invalidRule: 'Invalid Rule',
+    line: 'Line',
+    adminRequiredBanner: 'Not running as administrator: you can edit, but enabling/disabling Hosts will fail',
+    adminRequiredAction: 'Please run the app as administrator',
   },
 } satisfies Record<Lang, Record<string, string>>
 

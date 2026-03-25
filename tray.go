@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "embed"
+	"fmt"
 	"sync"
 
 	"github.com/getlantern/systray"
@@ -23,6 +24,25 @@ func (a *App) startTray() {
 			showItem := systray.AddMenuItem("Show", "Show window")
 			hideItem := systray.AddMenuItem("Hide", "Hide window")
 			systray.AddSeparator()
+			disableAllItem := systray.AddMenuItem("Disable Hosts", "Disable all hosts profiles")
+			systray.AddSeparator()
+			profileItems := make(map[string]*systray.MenuItem)
+			a.mu.RLock()
+			for _, p := range a.profiles {
+				profileItems[p.Name] = systray.AddMenuItem(fmt.Sprintf("Enable: %s", p.Name), "Enable this profile")
+			}
+			a.mu.RUnlock()
+			for name, item := range profileItems {
+				profileName := name
+				profileItem := item
+				go func() {
+					for range profileItem.ClickedCh {
+						_ = a.StartProfile(profileName)
+						runtime.EventsEmit(a.ctx, "profiles:changed")
+					}
+				}()
+			}
+			systray.AddSeparator()
 			quitItem := systray.AddMenuItem("Quit", "Quit application")
 
 			go func() {
@@ -34,6 +54,9 @@ func (a *App) startTray() {
 						runtime.WindowSetAlwaysOnTop(a.ctx, false)
 					case <-hideItem.ClickedCh:
 						runtime.WindowHide(a.ctx)
+					case <-disableAllItem.ClickedCh:
+						_ = a.StopAllProfiles()
+						runtime.EventsEmit(a.ctx, "profiles:changed")
 					case <-quitItem.ClickedCh:
 						a.mu.Lock()
 						a.allowQuit = true

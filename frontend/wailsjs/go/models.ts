@@ -1,5 +1,23 @@
 export namespace main {
 	
+	export class BackupInfo {
+	    file_name: string;
+	    path: string;
+	    size: number;
+	    modified: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.file_name = source["file_name"];
+	        this.path = source["path"];
+	        this.size = source["size"];
+	        this.modified = source["modified"];
+	    }
+	}
 	export class DuplicateDomain {
 	    domain: string;
 	    count: number;

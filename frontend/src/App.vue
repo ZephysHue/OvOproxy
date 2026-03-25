@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { GetProfiles, StartProfile, StopProfile, AddProfile, DeleteProfile, ImportHostsFromDialog, ExportHostsToDialog, DedupHosts, GetHostsText, SetHostsText, RenameProfile, IsAdmin, GetProxyAddress } from '../wailsjs/go/main/App'
-import { WindowMinimise, WindowToggleMaximise, Quit } from '../wailsjs/runtime/runtime'
+import { WindowMinimise, WindowToggleMaximise, Quit, EventsOn } from '../wailsjs/runtime/runtime'
 import ProfileCard from './components/ProfileCard.vue'
 import ProfileEditor from './components/ProfileEditor.vue'
 import AddProfileModal from './components/AddProfileModal.vue'
@@ -31,6 +31,7 @@ const renameFrom = ref('')
 const loading = ref(false)
 const hostsText = ref('')
 const searchQuery = ref('')
+const isAdmin = ref(true)
 
 const filteredProfiles = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
@@ -74,9 +75,8 @@ async function loadHostsText(name: string) {
 async function handleStart(name: string) {
   loading.value = true
   try {
-    const admin = await IsAdmin()
-    if (!admin) {
-      alert('需要管理员权限才能修改系统 hosts 文件。请右键以管理员身份运行。')
+    if (!isAdmin.value) {
+      alert(`${t('adminRequiredBanner')}\n${t('adminRequiredAction')}`)
       loading.value = false
       return
     }
@@ -92,9 +92,8 @@ async function handleStart(name: string) {
 async function handleStop(name: string) {
   loading.value = true
   try {
-    const admin = await IsAdmin()
-    if (!admin) {
-      alert('需要管理员权限才能修改系统 hosts 文件。请右键以管理员身份运行。')
+    if (!isAdmin.value) {
+      alert(`${t('adminRequiredBanner')}\n${t('adminRequiredAction')}`)
       loading.value = false
       return
     }
@@ -167,6 +166,11 @@ async function handleDedup(name: string) {
   }
 }
 
+async function handleReloadHosts(name: string) {
+  await loadProfiles()
+  await loadHostsText(name)
+}
+
 function openRename(name: string) {
   renameFrom.value = name
   showRename.value = true
@@ -194,6 +198,10 @@ function selectProfile(profile: Profile) {
 
 onMounted(() => {
   loadProfiles()
+  IsAdmin().then(v => { isAdmin.value = !!v }).catch(() => { isAdmin.value = false })
+  EventsOn('profiles:changed', () => {
+    loadProfiles()
+  })
 })
 </script>
 
@@ -235,7 +243,13 @@ onMounted(() => {
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 flex gap-6 p-6 overflow-hidden">
+    <div class="flex-1 flex gap-6 p-6 overflow-hidden relative">
+      <div
+        v-if="!isAdmin"
+        class="absolute top-12 left-6 right-6 z-10 rounded-xl border border-amber-500/40 bg-amber-500/15 px-4 py-2 text-amber-200 text-sm"
+      >
+        {{ t('adminRequiredBanner') }} · {{ t('adminRequiredAction') }}
+      </div>
       <!-- Left Panel: Profile List -->
       <div class="w-80 flex flex-col gap-4">
         <div class="flex items-center justify-between">
@@ -312,6 +326,7 @@ onMounted(() => {
           @export-hosts="handleExportHosts"
           @dedup="handleDedup"
           @rename="openRename"
+          @reload-hosts="handleReloadHosts"
         />
 
         <div 

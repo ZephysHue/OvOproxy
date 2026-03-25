@@ -4,6 +4,10 @@ import {main} from '../models';
 
 export function AddProfile(arg1:string,arg2:string,arg3:number):Promise<void>;
 
+export function ClearHostsEntries(arg1:string):Promise<void>;
+
+export function CreateHostsBackup(arg1:string):Promise<string>;
+
 export function DedupHosts(arg1:string):Promise<void>;
 
 export function DeleteProfile(arg1:string):Promise<void>;
@@ -22,13 +26,21 @@ export function ImportHostsFromDialog(arg1:string):Promise<void>;
 
 export function IsAdmin():Promise<boolean>;
 
+export function ListHostsBackups(arg1:string):Promise<Array<main.BackupInfo>>;
+
 export function LoadConfig():Promise<void>;
 
 export function RenameProfile(arg1:string,arg2:string):Promise<void>;
 
+export function ResetHostsTemplate(arg1:string):Promise<void>;
+
+export function RestoreHostsBackup(arg1:string,arg2:string):Promise<void>;
+
 export function SetHostsText(arg1:string,arg2:string):Promise<void>;
 
 export function StartProfile(arg1:string):Promise<void>;
+
+export function StopAllProfiles():Promise<void>;
 
 export function StopProfile(arg1:string):Promise<void>;
 

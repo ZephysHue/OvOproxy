@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"zephy/internal/config"
@@ -44,6 +45,13 @@ type HostEntry struct {
 type DuplicateDomain struct {
 	Domain string `json:"domain"`
 	Count  int    `json:"count"`
+}
+
+type BackupInfo struct {
+	FileName string `json:"file_name"`
+	Path     string `json:"path"`
+	Size     int64  `json:"size"`
+	Modified string `json:"modified"`
 }
 
 func NewApp() *App {
@@ -346,6 +354,26 @@ func (a *App) StopProfile(name string) error {
 			a.profiles[i].SystemHostsActive = false
 			a.profiles[i].Running = false
 		}
+	}
+	return nil
+}
+
+func (a *App) StopAllProfiles() error {
+	admin, err := winhosts.IsAdmin()
+	if err != nil {
+		return err
+	}
+	if !admin {
+		return fmt.Errorf("需要管理员权限才能修改系统 hosts 文件")
+	}
+	if err := winhosts.RemoveAllZephyBlocks(true); err != nil {
+		return err
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for i := range a.profiles {
+		a.profiles[i].SystemHostsActive = false
+		a.profiles[i].Running = false
 	}
 	return nil
 }
@@ -657,6 +685,125 @@ func (a *App) GetProxyLogs(profileName string, limit int) []ProxyLogEntry {
 		}
 	}
 	return result
+}
+
+func (a *App) profileHostsPath(profileName string) (string, error) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	for i := range a.profiles {
+		if a.profiles[i].Name != profileName {
+			continue
+		}
+		hostsPath := a.profiles[i].HostsFile
+		if !filepath.IsAbs(hostsPath) {
+			hostsPath = filepath.Join(a.exeDir, hostsPath)
+		}
+		return hostsPath, nil
+	}
+	return "", fmt.Errorf("profile %s not found", profileName)
+}
+
+func (a *App) backupDir(profileName string) string {
+	return filepath.Join(a.exeDir, "configs", "backups", profileName)
+}
+
+func (a *App) CreateHostsBackup(profileName string) (string, error) {
+	hostsPath, err := a.profileHostsPath(profileName)
+	if err != nil {
+		return "", err
+	}
+	data, err := os.ReadFile(hostsPath)
+	if err != nil {
+		return "", err
+	}
+	dir := a.backupDir(profileName)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+	name := "snapshot_" + time.Now().Format("20060102150405") + ".hosts"
+	dst := filepath.Join(dir, name)
+	if err := os.WriteFile(dst, data, 0644); err != nil {
+		return "", err
+	}
+	return name, nil
+}
+
+func (a *App) ListHostsBackups(profileName string) ([]BackupInfo, error) {
+	dir := a.backupDir(profileName)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []BackupInfo{}, nil
+		}
+		return nil, err
+	}
+	out := make([]BackupInfo, 0, len(entries))
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		out = append(out, BackupInfo{
+			FileName: e.Name(),
+			Path:     filepath.Join(dir, e.Name()),
+			Size:     info.Size(),
+			Modified: info.ModTime().Format("2006-01-02 15:04:05"),
+		})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Modified > out[j].Modified })
+	return out, nil
+}
+
+func (a *App) RestoreHostsBackup(profileName, fileName string) error {
+	hostsPath, err := a.profileHostsPath(profileName)
+	if err != nil {
+		return err
+	}
+	src := filepath.Join(a.backupDir(profileName), fileName)
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(hostsPath, data, 0644); err != nil {
+		return err
+	}
+
+	a.mu.Lock()
+	for i := range a.profiles {
+		if a.profiles[i].Name == profileName {
+			a.refreshProfileHostsLocked(i)
+			break
+		}
+	}
+	active := false
+	for i := range a.profiles {
+		if a.profiles[i].Name == profileName {
+			active = a.profiles[i].SystemHostsActive
+			break
+		}
+	}
+	a.mu.Unlock()
+
+	if active {
+		return a.StartProfile(profileName)
+	}
+	return nil
+}
+
+func (a *App) ClearHostsEntries(profileName string) error {
+	return a.SetHostsText(profileName, "")
+}
+
+func (a *App) ResetHostsTemplate(profileName string) error {
+	text := `# This file is managed by Zephy
+# Add entries in the format: IP DOMAIN
+# Example:
+# 120.92.124.158 account.wps.cn
+`
+	return a.SetHostsText(profileName, text)
 }
 
 func (a *App) saveConfig() error {

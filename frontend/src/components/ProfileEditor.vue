@@ -3,6 +3,7 @@ import { ref, watch, computed } from 'vue'
 import { t } from '../i18n'
 import { GetProxyAddress } from '../../wailsjs/go/main/App'
 import DiagnosticsPanel from './DiagnosticsPanel.vue'
+import BackupPanel from './BackupPanel.vue'
 
 interface Profile {
   name: string
@@ -30,6 +31,7 @@ const emit = defineEmits<{
   exportHosts: [name: string]
   dedup: [name: string]
   rename: [name: string]
+  reloadHosts: [name: string]
 }>()
 
 const editedText = ref('')
@@ -103,6 +105,72 @@ const findQuery = ref('')
 const findMatches = ref<number[]>([])
 const currentMatchIndex = ref(0)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const lineNumberRef = ref<HTMLDivElement | null>(null)
+
+type ParsedLine = {
+  lineNo: number
+  raw: string
+  type: 'mapping' | 'comment' | 'blank' | 'invalid'
+  enabled?: boolean
+  ip?: string
+  domain?: string
+}
+
+const parsedLines = computed<ParsedLine[]>(() => {
+  const lines = editedText.value.split('\n')
+  return lines.map((raw, idx) => {
+    const lineNo = idx + 1
+    const trimmed = raw.trim()
+    if (!trimmed) {
+      return { lineNo, raw, type: 'blank' }
+    }
+    const commentedMapping = raw.match(/^\s*#\s*([0-9a-fA-F:.]+)\s+([^\s#]+)\s*$/)
+    if (commentedMapping) {
+      return {
+        lineNo,
+        raw,
+        type: 'mapping',
+        enabled: false,
+        ip: commentedMapping[1],
+        domain: commentedMapping[2],
+      }
+    }
+    const mapping = raw.match(/^\s*([0-9a-fA-F:.]+)\s+([^\s#]+)\s*$/)
+    if (mapping) {
+      return {
+        lineNo,
+        raw,
+        type: 'mapping',
+        enabled: true,
+        ip: mapping[1],
+        domain: mapping[2],
+      }
+    }
+    if (trimmed.startsWith('#')) {
+      return { lineNo, raw, type: 'comment' }
+    }
+    return { lineNo, raw, type: 'invalid' }
+  })
+})
+
+const toggleableRules = computed(() => parsedLines.value.filter(l => l.type === 'mapping'))
+const lineNumbers = computed(() => parsedLines.value.map(l => l.lineNo))
+
+function toggleRule(lineNo: number, enabled: boolean) {
+  const lines = editedText.value.split('\n')
+  const idx = lineNo - 1
+  if (idx < 0 || idx >= lines.length) return
+  const line = lines[idx]
+  if (enabled) {
+    lines[idx] = line.replace(/^(\s*)#\s*/, '$1')
+  } else {
+    if (!/^\s*#/.test(line)) {
+      lines[idx] = line.replace(/^(\s*)/, '$1# ')
+    }
+  }
+  editedText.value = lines.join('\n')
+  onEdit()
+}
 
 function handleKeydown(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
@@ -155,6 +223,11 @@ function scrollToMatch() {
     const lineHeight = 24
     textareaRef.value.scrollTop = Math.max(0, (linesBefore - 3) * lineHeight)
   }
+}
+
+function onEditorScroll() {
+  if (!textareaRef.value || !lineNumberRef.value) return
+  lineNumberRef.value.scrollTop = textareaRef.value.scrollTop
 }
 </script>
 
@@ -289,6 +362,41 @@ function scrollToMatch() {
         class="mb-4"
       />
 
+      <BackupPanel :profile-name="profile.name" @changed="emit('reloadHosts', profile.name)" />
+
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 max-h-32 overflow-y-auto scrollbar-thin">
+          <div class="text-xs text-white/70 mb-2">{{ t('rulesPanel') }}</div>
+          <div v-if="toggleableRules.length === 0" class="text-xs text-white/40">{{ t('noHostMappings') }}</div>
+          <label
+            v-for="rule in toggleableRules"
+            :key="`${rule.lineNo}-${rule.domain}`"
+            class="flex items-center gap-2 text-xs text-white/80 py-1"
+          >
+            <input
+              type="checkbox"
+              :checked="rule.enabled"
+              @change="toggleRule(rule.lineNo, ($event.target as HTMLInputElement).checked)"
+            />
+            <span class="text-white/40">{{ t('line') }} {{ rule.lineNo }}</span>
+            <span class="truncate">{{ rule.domain }}</span>
+          </label>
+        </div>
+        <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 max-h-32 overflow-y-auto scrollbar-thin">
+          <div class="text-xs text-white/70 mb-2">{{ t('syntaxPreview') }}</div>
+          <div
+            v-for="lineItem in parsedLines"
+            :key="`preview-${lineItem.lineNo}`"
+            class="text-xs py-0.5 font-mono"
+            :class="lineItem.type === 'mapping' ? (lineItem.enabled ? 'text-emerald-300' : 'text-amber-300') : (lineItem.type === 'invalid' ? 'text-red-300' : 'text-white/40')"
+          >
+            <span class="text-white/40 mr-2">{{ lineItem.lineNo }}</span>
+            <span v-if="lineItem.type === 'invalid'">{{ t('invalidRule') }}: {{ lineItem.raw }}</span>
+            <span v-else>{{ lineItem.raw || ' ' }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Find Bar (Ctrl+F) -->
       <div v-if="showFind" class="mb-3 p-3 rounded-xl bg-slate-800/80 border border-slate-600/50 flex items-center gap-3">
         <input
@@ -318,14 +426,21 @@ function scrollToMatch() {
         </button>
       </div>
 
-      <div class="relative flex-1">
+      <div class="relative flex-1 flex">
+        <div
+          ref="lineNumberRef"
+          class="w-12 rounded-l-xl border border-r-0 border-slate-700/70 bg-slate-900 text-right pr-2 pt-4 text-xs font-mono text-white/40 overflow-hidden"
+        >
+          <div v-for="ln in lineNumbers" :key="`ln-${ln}`" class="leading-6">{{ ln }}</div>
+        </div>
         <textarea
           ref="textareaRef"
           v-model="editedText"
-          class="absolute inset-0 w-full h-full rounded-xl bg-slate-950 border border-slate-700/70 text-white/90 p-4 font-mono text-sm leading-6 outline-none focus:border-blue-400/60 resize-none scrollbar-thin"
+          class="w-full h-full rounded-r-xl rounded-l-none bg-slate-950 border border-slate-700/70 text-white/90 p-4 font-mono text-sm leading-6 outline-none focus:border-blue-400/60 resize-none scrollbar-thin"
           spellcheck="false"
           @input="onEdit"
           @keydown="handleKeydown"
+          @scroll="onEditorScroll"
         />
       </div>
     </div>

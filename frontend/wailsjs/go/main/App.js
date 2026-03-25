@@ -6,6 +6,14 @@ export function AddProfile(arg1, arg2, arg3) {
   return window['go']['main']['App']['AddProfile'](arg1, arg2, arg3);
 }
 
+export function ClearHostsEntries(arg1) {
+  return window['go']['main']['App']['ClearHostsEntries'](arg1);
+}
+
+export function CreateHostsBackup(arg1) {
+  return window['go']['main']['App']['CreateHostsBackup'](arg1);
+}
+
 export function DedupHosts(arg1) {
   return window['go']['main']['App']['DedupHosts'](arg1);
 }
@@ -42,6 +50,10 @@ export function IsAdmin() {
   return window['go']['main']['App']['IsAdmin']();
 }
 
+export function ListHostsBackups(arg1) {
+  return window['go']['main']['App']['ListHostsBackups'](arg1);
+}
+
 export function LoadConfig() {
   return window['go']['main']['App']['LoadConfig']();
 }
@@ -50,12 +62,24 @@ export function RenameProfile(arg1, arg2) {
   return window['go']['main']['App']['RenameProfile'](arg1, arg2);
 }
 
+export function ResetHostsTemplate(arg1) {
+  return window['go']['main']['App']['ResetHostsTemplate'](arg1);
+}
+
+export function RestoreHostsBackup(arg1, arg2) {
+  return window['go']['main']['App']['RestoreHostsBackup'](arg1, arg2);
+}
+
 export function SetHostsText(arg1, arg2) {
   return window['go']['main']['App']['SetHostsText'](arg1, arg2);
 }
 
 export function StartProfile(arg1) {
   return window['go']['main']['App']['StartProfile'](arg1);
+}
+
+export function StopAllProfiles() {
+  return window['go']['main']['App']['StopAllProfiles']();
 }
 
 export function StopProfile(arg1) {
