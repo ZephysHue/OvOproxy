@@ -321,7 +321,7 @@ onMounted(() => {
       </div>
 
       <!-- Right Panel: Profile Editor -->
-      <div class="flex-1 overflow-hidden">
+      <div class="flex-1 overflow-y-auto scrollbar-thin">
         <ProfileEditor
           v-if="selectedProfile"
           :profile="selectedProfile"

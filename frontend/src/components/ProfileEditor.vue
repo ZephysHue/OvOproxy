@@ -322,9 +322,9 @@ function onEditorScroll() {
 </script>
 
 <template>
-  <div class="h-full flex flex-col glass-card overflow-hidden">
+  <div class="h-full flex flex-col glass-card overflow-y-auto scrollbar-thin">
     <!-- Header -->
-    <div class="p-5 border-b border-white/10">
+    <div class="p-5 border-b border-white/10 sticky top-0 z-20 bg-slate-900/95 backdrop-blur-sm">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <div 
@@ -416,7 +416,7 @@ function onEditorScroll() {
     </div>
 
     <!-- Hosts Editor (Notepad-like) -->
-    <div class="flex-1 p-5 overflow-hidden flex flex-col">
+    <div class="flex-1 p-5 flex flex-col">
       <div v-if="duplicates.length > 0" class="mb-4 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between">
         <div class="text-amber-200 text-sm">
           {{ t('duplicatesFound', { count: duplicates.length }) }}
@@ -540,7 +540,7 @@ function onEditorScroll() {
         </button>
       </div>
 
-      <div class="relative flex-1 flex">
+      <div class="relative flex-1 flex min-h-[320px]">
         <div
           ref="lineNumberRef"
           class="w-12 rounded-l-xl border border-r-0 border-slate-700/70 bg-slate-900 text-right pr-2 pt-4 text-xs font-mono text-white/40 overflow-hidden"
