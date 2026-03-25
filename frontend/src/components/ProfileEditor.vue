@@ -5,6 +5,7 @@ import { GetProxyAddress } from '../../wailsjs/go/main/App'
 import DiagnosticsPanel from './DiagnosticsPanel.vue'
 import BackupPanel from './BackupPanel.vue'
 import SubscriptionPanel from './SubscriptionPanel.vue'
+import AuditPanel from './AuditPanel.vue'
 
 interface Profile {
   name: string
@@ -24,7 +25,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  saveText: [name: string, text: string]
+  saveText: [name: string, text: string, confirmedRisk?: boolean]
   delete: [name: string]
   start: [name: string]
   stop: [name: string]
@@ -39,7 +40,10 @@ const editedText = ref('')
 const hasChanges = ref(false)
 const copiedMsg = ref(false)
 const showDiagnostics = ref(false)
+const showAudit = ref(false)
 const hostsWarnings = ref<string[]>([])
+const showRiskConfirm = ref(false)
+const riskPreview = ref<string[]>([])
 
 const proxyAddress = computed(() => `${props.profile.listen_ip}:${props.profile.port}`)
 
@@ -87,6 +91,20 @@ function validateHosts(text: string) {
   hostsWarnings.value = warnings
 }
 
+function getRiskLines(text: string): string[] {
+  const risky: string[] = []
+  for (const raw of text.split('\n')) {
+    const trimmed = raw.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
+    const parts = trimmed.split(/\s+/)
+    if (parts.length < 2) continue
+    if (parts[0] === '127.0.0.1' || parts[0] === '0.0.0.0') {
+      risky.push(trimmed)
+    }
+  }
+  return risky
+}
+
 function confirmDelete() {
   if (confirm(`${t('delete')} "${props.profile.name}"?`)) {
     emit('delete', props.profile.name)
@@ -94,13 +112,25 @@ function confirmDelete() {
 }
 
 function saveChanges() {
-  emit('saveText', props.profile.name, editedText.value)
+  const risky = getRiskLines(editedText.value)
+  if (risky.length > 0) {
+    riskPreview.value = risky.slice(0, 8)
+    showRiskConfirm.value = true
+    return
+  }
+  emit('saveText', props.profile.name, editedText.value, true)
   hasChanges.value = false
 }
 
 function onEdit() {
   hasChanges.value = true
   validateHosts(editedText.value)
+}
+
+function saveWithRiskConfirmed() {
+  emit('saveText', props.profile.name, editedText.value, true)
+  hasChanges.value = false
+  showRiskConfirm.value = false
 }
 
 async function copyProxyAddr() {
@@ -411,6 +441,12 @@ function onEditorScroll() {
           >
             {{ t('diagnostics') }} {{ showDiagnostics ? '▼' : '▶' }}
           </button>
+          <button
+            class="text-sm text-white/50 hover:text-white/80"
+            @click="showAudit = !showAudit"
+          >
+            {{ t('auditLogs') }} {{ showAudit ? '▼' : '▶' }}
+          </button>
           <span class="text-sm text-white/40">{{ profile.hosts_file }}</span>
         </div>
       </div>
@@ -419,6 +455,11 @@ function onEditorScroll() {
         v-if="showDiagnostics"
         :profile-name="profile.name"
         :proxy-address="proxyAddress"
+        class="mb-4"
+      />
+      <AuditPanel
+        v-if="showAudit"
+        :profile-name="profile.name"
         class="mb-4"
       />
 
@@ -530,5 +571,27 @@ function onEditorScroll() {
         </button>
       </div>
     </div>
+    <Teleport to="body">
+      <div
+        v-if="showRiskConfirm"
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+      >
+        <div class="absolute inset-0 bg-black/60" @click="showRiskConfirm = false" />
+        <div class="relative glass-card w-full max-w-xl p-6">
+          <h3 class="text-lg font-semibold text-white/90 mb-3">{{ t('highRiskConfirmTitle') }}</h3>
+          <p class="text-sm text-amber-200 mb-3">{{ t('highRiskConfirmDesc') }}</p>
+          <div class="rounded border border-amber-500/30 bg-amber-500/10 p-2 max-h-44 overflow-y-auto">
+            <div v-for="line in riskPreview" :key="line" class="text-xs font-mono text-amber-100 py-0.5">{{ line }}</div>
+            <div v-if="riskPreview.length === 0" class="text-xs text-amber-200/70">{{ t('noHostMappings') }}</div>
+          </div>
+          <div class="mt-4 flex justify-end gap-2">
+            <button class="glass-button text-white/70" @click="showRiskConfirm = false">{{ t('cancel') }}</button>
+            <button class="glass-button text-amber-200 border-amber-400/30" @click="saveWithRiskConfirmed">
+              {{ t('continueSave') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { lang, setLang, t, type Lang } from '../i18n'
+import { themeMode, setThemeMode, type ThemeMode } from '../theme'
 
 const props = defineProps<{
   show: boolean
@@ -13,6 +14,11 @@ const emit = defineEmits<{
 const current = computed({
   get: () => lang.value,
   set: (v: Lang) => setLang(v),
+})
+
+const currentTheme = computed({
+  get: () => themeMode.value,
+  set: (v: ThemeMode) => setThemeMode(v),
 })
 </script>
 
@@ -41,6 +47,14 @@ const current = computed({
               <select v-model="current" class="glass-input">
                 <option value="zh">{{ t('chinese') }}</option>
                 <option value="en">{{ t('english') }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm text-white/70 mb-2">{{ t('theme') }}</label>
+              <select v-model="currentTheme" class="glass-input">
+                <option value="system">{{ t('themeSystem') }}</option>
+                <option value="dark">{{ t('themeDark') }}</option>
+                <option value="light">{{ t('themeLight') }}</option>
               </select>
             </div>
           </div>

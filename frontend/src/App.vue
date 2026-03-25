@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { GetProfiles, StartProfile, StopProfile, AddProfile, DeleteProfile, ImportHostsFromDialog, ExportHostsToDialog, DedupHosts, GetHostsText, SetHostsText, RenameProfile, IsAdmin, GetProxyAddress } from '../wailsjs/go/main/App'
+import { GetProfiles, StartProfile, StopProfile, AddProfile, DeleteProfile, ImportHostsFromDialog, ExportHostsToDialog, DedupHosts, GetHostsText, SetHostsText, RenameProfile, IsAdmin, GetProxyAddress, RelaunchAsAdmin } from '../wailsjs/go/main/App'
 import { WindowMinimise, WindowToggleMaximise, Quit, EventsOn } from '../wailsjs/runtime/runtime'
 import ProfileCard from './components/ProfileCard.vue'
 import ProfileEditor from './components/ProfileEditor.vue'
@@ -129,13 +129,21 @@ async function handleDelete(name: string) {
   }
 }
 
-async function handleSaveText(name: string, text: string) {
+async function handleSaveText(name: string, text: string, _confirmedRisk?: boolean) {
   try {
     await SetHostsText(name, text)
     await loadProfiles()
     await loadHostsText(name)
   } catch (e) {
     console.error('Failed to save hosts text:', e)
+  }
+}
+
+async function handleRelaunchAsAdmin() {
+  try {
+    await RelaunchAsAdmin()
+  } catch (e: any) {
+    alert(e?.message || String(e))
   }
 }
 
@@ -207,7 +215,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full w-full flex flex-col bg-gradient-to-br from-slate-900 via-purple-900/30 to-slate-900">
+  <div class="app-shell h-full w-full flex flex-col">
     <!-- Titlebar -->
     <div class="titlebar">
       <div class="flex items-center gap-3">
@@ -371,7 +379,10 @@ onMounted(() => {
           <h3 class="text-lg font-semibold text-white/90 mb-3">{{ t('adminRequiredTitle') }}</h3>
           <p class="text-sm text-amber-200 mb-2">{{ t('adminRequiredBanner') }}</p>
           <p class="text-sm text-white/70 mb-5">{{ t('adminRequiredAction') }}</p>
-          <div class="flex justify-end">
+          <div class="flex justify-end gap-2">
+            <button class="glass-button text-amber-200 border-amber-400/30" @click="handleRelaunchAsAdmin">
+              {{ t('relaunchAsAdmin') }}
+            </button>
             <button class="glass-button text-white/80" @click="showAdminModal = false">
               {{ t('gotIt') }}
             </button>
