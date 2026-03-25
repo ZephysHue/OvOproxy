@@ -145,6 +145,26 @@ export namespace main {
 	        this.error = source["error"];
 	    }
 	}
+	export class SubscriptionConflictPreview {
+	    sub_id: string;
+	    sub_name: string;
+	    domains: string[];
+	    total: number;
+	    truncate: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new SubscriptionConflictPreview(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.sub_id = source["sub_id"];
+	        this.sub_name = source["sub_name"];
+	        this.domains = source["domains"];
+	        this.total = source["total"];
+	        this.truncate = source["truncate"];
+	    }
+	}
 
 }
 

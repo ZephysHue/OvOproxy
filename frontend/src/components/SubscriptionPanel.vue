@@ -7,6 +7,8 @@ import {
   RemoveProfileSubscription,
   SetProfileSubscriptionEnabled,
   RefreshProfileSubscriptions,
+  RefreshSingleProfileSubscription,
+  PreviewSubscriptionConflicts,
 } from '../../wailsjs/go/main/App'
 
 interface Subscription {
@@ -18,6 +20,14 @@ interface Subscription {
   last_status?: string
 }
 
+interface ConflictPreview {
+  sub_id: string
+  sub_name: string
+  domains: string[]
+  total: number
+  truncate: boolean
+}
+
 const props = defineProps<{ profileName: string }>()
 const emit = defineEmits<{ changed: [] }>()
 
@@ -25,6 +35,8 @@ const subs = ref<Subscription[]>([])
 const addingName = ref('')
 const addingURL = ref('')
 const busy = ref(false)
+const subBusyId = ref('')
+const previews = ref<Record<string, ConflictPreview | undefined>>({})
 
 async function loadSubs() {
   try {
@@ -86,6 +98,31 @@ async function manualRefresh() {
   }
 }
 
+async function manualRefreshOne(subId: string) {
+  subBusyId.value = subId
+  try {
+    await RefreshSingleProfileSubscription(props.profileName, subId)
+    await loadSubs()
+    emit('changed')
+  } catch (e) {
+    alert(String(e))
+  } finally {
+    subBusyId.value = ''
+  }
+}
+
+async function previewConflicts(subId: string) {
+  subBusyId.value = subId
+  try {
+    const preview = await PreviewSubscriptionConflicts(props.profileName, subId)
+    previews.value[subId] = preview
+  } catch (e) {
+    alert(String(e))
+  } finally {
+    subBusyId.value = ''
+  }
+}
+
 watch(() => props.profileName, loadSubs, { immediate: true })
 </script>
 
@@ -133,6 +170,20 @@ watch(() => props.profileName, loadSubs, { immediate: true })
               />
               {{ sub.enabled ? t('enabled') : t('disabled') }}
             </label>
+            <button
+              class="glass-button text-[11px] text-cyan-200 px-2 py-1"
+              :disabled="busy || !!subBusyId"
+              @click="manualRefreshOne(sub.id)"
+            >
+              {{ t('refreshThisSubscription') }}
+            </button>
+            <button
+              class="glass-button text-[11px] text-amber-200 px-2 py-1"
+              :disabled="busy || !!subBusyId"
+              @click="previewConflicts(sub.id)"
+            >
+              {{ t('conflictPreview') }}
+            </button>
             <button class="glass-button text-[11px] text-red-200 px-2 py-1" @click="removeSub(sub.id)">
               {{ t('remove') }}
             </button>
@@ -140,6 +191,13 @@ watch(() => props.profileName, loadSubs, { immediate: true })
         </div>
         <div class="mt-1 text-white/40">
           {{ t('lastStatus') }}: {{ sub.last_status || '-' }} · {{ t('lastUpdated') }}: {{ sub.last_updated || '-' }}
+        </div>
+        <div v-if="previews[sub.id]" class="mt-1 text-[11px] text-amber-200/90">
+          {{ t('conflictCount', { count: previews[sub.id]!.total }) }}
+          <span v-if="previews[sub.id]!.domains.length > 0">
+            · {{ previews[sub.id]!.domains.join(', ') }}
+          </span>
+          <span v-if="previews[sub.id]!.truncate"> ...</span>
         </div>
       </div>
     </div>

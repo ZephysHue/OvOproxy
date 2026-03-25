@@ -58,6 +58,14 @@ type BackupInfo struct {
 	Modified string `json:"modified"`
 }
 
+type SubscriptionConflictPreview struct {
+	SubID    string   `json:"sub_id"`
+	SubName  string   `json:"sub_name"`
+	Domains  []string `json:"domains"`
+	Total    int      `json:"total"`
+	Truncate bool     `json:"truncate"`
+}
+
 const (
 	subscriptionBlockStart = "# >>> Zephy Subscriptions Start"
 	subscriptionBlockEnd   = "# <<< Zephy Subscriptions End"
@@ -911,6 +919,105 @@ func (a *App) RefreshProfileSubscriptions(profileName string) error {
 	err = a.saveConfig()
 	a.mu.Unlock()
 	return err
+}
+
+func (a *App) RefreshSingleProfileSubscription(profileName, subID string) error {
+	a.mu.RLock()
+	found := false
+	for i := range a.profiles {
+		if a.profiles[i].Name != profileName {
+			continue
+		}
+		for _, s := range a.profiles[i].Subscriptions {
+			if s.ID == subID {
+				found = true
+				break
+			}
+		}
+		break
+	}
+	a.mu.RUnlock()
+	if !found {
+		return fmt.Errorf("subscription not found")
+	}
+	// For consistency, single refresh re-runs merge for all enabled subscriptions.
+	return a.RefreshProfileSubscriptions(profileName)
+}
+
+func (a *App) PreviewSubscriptionConflicts(profileName, subID string) (SubscriptionConflictPreview, error) {
+	preview := SubscriptionConflictPreview{SubID: subID, Domains: []string{}}
+	a.mu.RLock()
+	profileIdx := -1
+	var target config.Subscription
+	for i := range a.profiles {
+		if a.profiles[i].Name != profileName {
+			continue
+		}
+		profileIdx = i
+		for _, s := range a.profiles[i].Subscriptions {
+			if s.ID == subID {
+				target = s
+				break
+			}
+		}
+		break
+	}
+	if profileIdx < 0 {
+		a.mu.RUnlock()
+		return preview, fmt.Errorf("profile %s not found", profileName)
+	}
+	if target.ID == "" {
+		a.mu.RUnlock()
+		return preview, fmt.Errorf("subscription not found")
+	}
+	hostsPath := a.profiles[profileIdx].HostsFile
+	if !filepath.IsAbs(hostsPath) {
+		hostsPath = filepath.Join(a.exeDir, hostsPath)
+	}
+	a.mu.RUnlock()
+
+	preview.SubName = target.Name
+	remoteText, err := fetchSubscriptionText(target.URL)
+	if err != nil {
+		return preview, err
+	}
+	remoteEntries, _, err := hosts.ParseText(remoteText)
+	if err != nil {
+		return preview, err
+	}
+	remoteEntries = hosts.DedupEntriesKeepLast(remoteEntries)
+
+	localTextBytes, err := os.ReadFile(hostsPath)
+	if err != nil {
+		return preview, err
+	}
+	baseText := splitSubscriptionsBlock(string(localTextBytes))
+	localEntries, _, _ := hosts.ParseText(baseText)
+	localMap := hosts.EntriesToMap(localEntries)
+
+	conflictsSet := map[string]struct{}{}
+	for _, e := range remoteEntries {
+		d := strings.ToLower(strings.TrimSpace(e.Domain))
+		if d == "" {
+			continue
+		}
+		if _, ok := localMap[d]; ok {
+			conflictsSet[d] = struct{}{}
+		}
+	}
+	all := make([]string, 0, len(conflictsSet))
+	for d := range conflictsSet {
+		all = append(all, d)
+	}
+	sort.Strings(all)
+	preview.Total = len(all)
+	if len(all) > 30 {
+		preview.Domains = all[:30]
+		preview.Truncate = true
+	} else {
+		preview.Domains = all
+	}
+	return preview, nil
 }
 
 func (a *App) profileHostsPath(profileName string) (string, error) {

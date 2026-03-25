@@ -35,7 +35,11 @@ export function ListHostsBackups(arg1:string):Promise<Array<main.BackupInfo>>;
 
 export function LoadConfig():Promise<void>;
 
+export function PreviewSubscriptionConflicts(arg1:string,arg2:string):Promise<main.SubscriptionConflictPreview>;
+
 export function RefreshProfileSubscriptions(arg1:string):Promise<void>;
+
+export function RefreshSingleProfileSubscription(arg1:string,arg2:string):Promise<void>;
 
 export function RemoveProfileSubscription(arg1:string,arg2:string):Promise<void>;
 

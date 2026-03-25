@@ -66,8 +66,16 @@ export function LoadConfig() {
   return window['go']['main']['App']['LoadConfig']();
 }
 
+export function PreviewSubscriptionConflicts(arg1, arg2) {
+  return window['go']['main']['App']['PreviewSubscriptionConflicts'](arg1, arg2);
+}
+
 export function RefreshProfileSubscriptions(arg1) {
   return window['go']['main']['App']['RefreshProfileSubscriptions'](arg1);
+}
+
+export function RefreshSingleProfileSubscription(arg1, arg2) {
+  return window['go']['main']['App']['RefreshSingleProfileSubscription'](arg1, arg2);
 }
 
 export function RemoveProfileSubscription(arg1, arg2) {
