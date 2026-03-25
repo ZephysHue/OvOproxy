@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -53,6 +57,11 @@ type BackupInfo struct {
 	Size     int64  `json:"size"`
 	Modified string `json:"modified"`
 }
+
+const (
+	subscriptionBlockStart = "# >>> Zephy Subscriptions Start"
+	subscriptionBlockEnd   = "# <<< Zephy Subscriptions End"
+)
 
 func NewApp() *App {
 	exeDir := "."
@@ -685,6 +694,223 @@ func (a *App) GetProxyLogs(profileName string, limit int) []ProxyLogEntry {
 		}
 	}
 	return result
+}
+
+func (a *App) GetProfileSubscriptions(profileName string) ([]config.Subscription, error) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+	for i := range a.profiles {
+		if a.profiles[i].Name == profileName {
+			subs := make([]config.Subscription, len(a.profiles[i].Subscriptions))
+			copy(subs, a.profiles[i].Subscriptions)
+			return subs, nil
+		}
+	}
+	return nil, fmt.Errorf("profile %s not found", profileName)
+}
+
+func (a *App) AddProfileSubscription(profileName, subName, subURL string) error {
+	subName = strings.TrimSpace(subName)
+	subURL = strings.TrimSpace(subURL)
+	if subURL == "" {
+		return fmt.Errorf("subscription url is required")
+	}
+	u, err := url.Parse(subURL)
+	if err != nil || u.Scheme != "https" || u.Host == "" {
+		return fmt.Errorf("subscription url must be valid https url")
+	}
+	if subName == "" {
+		subName = u.Host
+	}
+
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for i := range a.profiles {
+		if a.profiles[i].Name != profileName {
+			continue
+		}
+		for _, s := range a.profiles[i].Subscriptions {
+			if strings.EqualFold(s.URL, subURL) {
+				return fmt.Errorf("subscription already exists")
+			}
+		}
+		id := strconv.FormatInt(time.Now().UnixNano(), 10)
+		a.profiles[i].Subscriptions = append(a.profiles[i].Subscriptions, config.Subscription{
+			ID:      id,
+			Name:    subName,
+			URL:     subURL,
+			Enabled: true,
+		})
+		return a.saveConfig()
+	}
+	return fmt.Errorf("profile %s not found", profileName)
+}
+
+func (a *App) RemoveProfileSubscription(profileName, subID string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for i := range a.profiles {
+		if a.profiles[i].Name != profileName {
+			continue
+		}
+		for j := range a.profiles[i].Subscriptions {
+			if a.profiles[i].Subscriptions[j].ID == subID {
+				a.profiles[i].Subscriptions = append(a.profiles[i].Subscriptions[:j], a.profiles[i].Subscriptions[j+1:]...)
+				return a.saveConfig()
+			}
+		}
+		return fmt.Errorf("subscription not found")
+	}
+	return fmt.Errorf("profile %s not found", profileName)
+}
+
+func (a *App) SetProfileSubscriptionEnabled(profileName, subID string, enabled bool) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for i := range a.profiles {
+		if a.profiles[i].Name != profileName {
+			continue
+		}
+		for j := range a.profiles[i].Subscriptions {
+			if a.profiles[i].Subscriptions[j].ID == subID {
+				a.profiles[i].Subscriptions[j].Enabled = enabled
+				return a.saveConfig()
+			}
+		}
+		return fmt.Errorf("subscription not found")
+	}
+	return fmt.Errorf("profile %s not found", profileName)
+}
+
+func fetchSubscriptionText(subURL string) (string, error) {
+	client := &http.Client{Timeout: 12 * time.Second}
+	req, err := http.NewRequest(http.MethodGet, subURL, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("User-Agent", "ZephyHosts/1.0")
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("http status %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 2*1024*1024))
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+func splitSubscriptionsBlock(text string) string {
+	start := strings.Index(text, subscriptionBlockStart)
+	end := strings.Index(text, subscriptionBlockEnd)
+	if start < 0 || end < 0 || end < start {
+		return text
+	}
+	endLine := strings.Index(text[end:], "\n")
+	if endLine >= 0 {
+		end = end + endLine + 1
+	} else {
+		end = len(text)
+	}
+	return strings.TrimRight(text[:start]+text[end:], "\r\n")
+}
+
+func (a *App) RefreshProfileSubscriptions(profileName string) error {
+	a.mu.RLock()
+	profileIdx := -1
+	for i := range a.profiles {
+		if a.profiles[i].Name == profileName {
+			profileIdx = i
+			break
+		}
+	}
+	if profileIdx < 0 {
+		a.mu.RUnlock()
+		return fmt.Errorf("profile %s not found", profileName)
+	}
+	hostsPath := a.profiles[profileIdx].HostsFile
+	if !filepath.IsAbs(hostsPath) {
+		hostsPath = filepath.Join(a.exeDir, hostsPath)
+	}
+	subs := make([]config.Subscription, len(a.profiles[profileIdx].Subscriptions))
+	copy(subs, a.profiles[profileIdx].Subscriptions)
+	a.mu.RUnlock()
+
+	remoteEntries := make([]hosts.Entry, 0)
+	statusByID := make(map[string]string)
+	now := time.Now().Format("2006-01-02 15:04:05")
+	for _, sub := range subs {
+		if !sub.Enabled {
+			continue
+		}
+		text, err := fetchSubscriptionText(sub.URL)
+		if err != nil {
+			statusByID[sub.ID] = "failed: " + err.Error()
+			continue
+		}
+		entries, _, err := hosts.ParseText(text)
+		if err != nil {
+			statusByID[sub.ID] = "failed: parse error"
+			continue
+		}
+		remoteEntries = append(remoteEntries, entries...)
+		statusByID[sub.ID] = "ok"
+	}
+
+	localTextBytes, err := os.ReadFile(hostsPath)
+	if err != nil {
+		return err
+	}
+	baseText := splitSubscriptionsBlock(string(localTextBytes))
+
+	localEntries, _, _ := hosts.ParseText(baseText)
+	localMap := hosts.EntriesToMap(localEntries)
+	remoteDedup := hosts.DedupEntriesKeepLast(remoteEntries)
+	finalRemoteLines := make([]string, 0, len(remoteDedup))
+	for _, e := range remoteDedup {
+		if _, exists := localMap[strings.ToLower(strings.TrimSpace(e.Domain))]; exists {
+			continue // local priority
+		}
+		finalRemoteLines = append(finalRemoteLines, fmt.Sprintf("%s %s", e.IP, e.Domain))
+	}
+
+	newText := baseText
+	if len(finalRemoteLines) > 0 {
+		block := subscriptionBlockStart + "\n" +
+			"# Auto merged from subscriptions (manual refresh)\n" +
+			strings.Join(finalRemoteLines, "\n") + "\n" +
+			subscriptionBlockEnd + "\n"
+		if strings.TrimSpace(newText) != "" {
+			newText += "\n"
+		}
+		newText += block
+	}
+
+	if err := os.WriteFile(hostsPath, []byte(newText), 0644); err != nil {
+		return err
+	}
+
+	a.mu.Lock()
+	for i := range a.profiles {
+		if a.profiles[i].Name != profileName {
+			continue
+		}
+		for j := range a.profiles[i].Subscriptions {
+			if s, ok := statusByID[a.profiles[i].Subscriptions[j].ID]; ok {
+				a.profiles[i].Subscriptions[j].LastStatus = s
+				a.profiles[i].Subscriptions[j].LastUpdated = now
+			}
+		}
+		a.refreshProfileHostsLocked(i)
+		break
+	}
+	err = a.saveConfig()
+	a.mu.Unlock()
+	return err
 }
 
 func (a *App) profileHostsPath(profileName string) (string, error) {

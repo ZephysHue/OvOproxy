@@ -6,6 +6,10 @@ export function AddProfile(arg1, arg2, arg3) {
   return window['go']['main']['App']['AddProfile'](arg1, arg2, arg3);
 }
 
+export function AddProfileSubscription(arg1, arg2, arg3) {
+  return window['go']['main']['App']['AddProfileSubscription'](arg1, arg2, arg3);
+}
+
 export function ClearHostsEntries(arg1) {
   return window['go']['main']['App']['ClearHostsEntries'](arg1);
 }
@@ -28,6 +32,10 @@ export function ExportHostsToDialog(arg1) {
 
 export function GetHostsText(arg1) {
   return window['go']['main']['App']['GetHostsText'](arg1);
+}
+
+export function GetProfileSubscriptions(arg1) {
+  return window['go']['main']['App']['GetProfileSubscriptions'](arg1);
 }
 
 export function GetProfiles() {
@@ -58,6 +66,14 @@ export function LoadConfig() {
   return window['go']['main']['App']['LoadConfig']();
 }
 
+export function RefreshProfileSubscriptions(arg1) {
+  return window['go']['main']['App']['RefreshProfileSubscriptions'](arg1);
+}
+
+export function RemoveProfileSubscription(arg1, arg2) {
+  return window['go']['main']['App']['RemoveProfileSubscription'](arg1, arg2);
+}
+
 export function RenameProfile(arg1, arg2) {
   return window['go']['main']['App']['RenameProfile'](arg1, arg2);
 }
@@ -72,6 +88,10 @@ export function RestoreHostsBackup(arg1, arg2) {
 
 export function SetHostsText(arg1, arg2) {
   return window['go']['main']['App']['SetHostsText'](arg1, arg2);
+}
+
+export function SetProfileSubscriptionEnabled(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetProfileSubscriptionEnabled'](arg1, arg2, arg3);
 }
 
 export function StartProfile(arg1) {

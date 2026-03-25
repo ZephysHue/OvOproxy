@@ -7,10 +7,20 @@ import (
 )
 
 type Profile struct {
-	Name      string `json:"name"`
-	ListenIP  string `json:"listen_ip"`
-	Port      int    `json:"port"`
-	HostsFile string `json:"hosts_file"`
+	Name          string         `json:"name"`
+	ListenIP      string         `json:"listen_ip"`
+	Port          int            `json:"port"`
+	HostsFile     string         `json:"hosts_file"`
+	Subscriptions []Subscription `json:"subscriptions,omitempty"`
+}
+
+type Subscription struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	URL         string `json:"url"`
+	Enabled     bool   `json:"enabled"`
+	LastUpdated string `json:"last_updated,omitempty"`
+	LastStatus  string `json:"last_status,omitempty"`
 }
 
 type File struct {

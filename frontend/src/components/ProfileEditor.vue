@@ -4,6 +4,7 @@ import { t } from '../i18n'
 import { GetProxyAddress } from '../../wailsjs/go/main/App'
 import DiagnosticsPanel from './DiagnosticsPanel.vue'
 import BackupPanel from './BackupPanel.vue'
+import SubscriptionPanel from './SubscriptionPanel.vue'
 
 interface Profile {
   name: string
@@ -421,6 +422,7 @@ function onEditorScroll() {
         class="mb-4"
       />
 
+      <SubscriptionPanel :profile-name="profile.name" @changed="emit('reloadHosts', profile.name)" />
       <BackupPanel :profile-name="profile.name" @changed="emit('reloadHosts', profile.name)" />
 
       <div class="grid grid-cols-2 gap-3 mb-3">

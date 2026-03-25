@@ -1,3 +1,30 @@
+export namespace config {
+	
+	export class Subscription {
+	    id: string;
+	    name: string;
+	    url: string;
+	    enabled: boolean;
+	    last_updated?: string;
+	    last_status?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Subscription(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.name = source["name"];
+	        this.url = source["url"];
+	        this.enabled = source["enabled"];
+	        this.last_updated = source["last_updated"];
+	        this.last_status = source["last_status"];
+	    }
+	}
+
+}
+
 export namespace main {
 	
 	export class BackupInfo {
@@ -51,6 +78,7 @@ export namespace main {
 	    listen_ip: string;
 	    port: number;
 	    hosts_file: string;
+	    subscriptions?: config.Subscription[];
 	    running: boolean;
 	    hosts: Record<string, string>;
 	    duplicate_domains: DuplicateDomain[];
@@ -68,6 +96,7 @@ export namespace main {
 	        this.listen_ip = source["listen_ip"];
 	        this.port = source["port"];
 	        this.hosts_file = source["hosts_file"];
+	        this.subscriptions = this.convertValues(source["subscriptions"], config.Subscription);
 	        this.running = source["running"];
 	        this.hosts = source["hosts"];
 	        this.duplicate_domains = this.convertValues(source["duplicate_domains"], DuplicateDomain);
