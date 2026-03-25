@@ -94,6 +94,13 @@ const dict = {
     line: '行',
     adminRequiredBanner: '当前不是管理员权限：可查看和编辑，但启用/禁用 Hosts 会失败',
     adminRequiredAction: '请右键以管理员身份运行程序',
+    enableAll: '全部启用',
+    disableAll: '全部禁用',
+    ruleFilter: '筛选域名',
+    adminRequiredTitle: '需要管理员权限',
+    gotIt: '我知道了',
+    hostsWarningInvalidIP: '警告：存在无效 IP 格式',
+    hostsWarningInvalidDomain: '警告：存在无效域名格式',
   },
   en: {
     appTitle: 'Multi-Host Proxy',
@@ -183,6 +190,13 @@ const dict = {
     line: 'Line',
     adminRequiredBanner: 'Not running as administrator: you can edit, but enabling/disabling Hosts will fail',
     adminRequiredAction: 'Please run the app as administrator',
+    enableAll: 'Enable All',
+    disableAll: 'Disable All',
+    ruleFilter: 'Filter domain',
+    adminRequiredTitle: 'Administrator Required',
+    gotIt: 'Got it',
+    hostsWarningInvalidIP: 'Warning: Invalid IP format found',
+    hostsWarningInvalidDomain: 'Warning: Invalid domain format found',
   },
 } satisfies Record<Lang, Record<string, string>>
 

@@ -32,6 +32,7 @@ const loading = ref(false)
 const hostsText = ref('')
 const searchQuery = ref('')
 const isAdmin = ref(true)
+const showAdminModal = ref(false)
 
 const filteredProfiles = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
@@ -76,7 +77,7 @@ async function handleStart(name: string) {
   loading.value = true
   try {
     if (!isAdmin.value) {
-      alert(`${t('adminRequiredBanner')}\n${t('adminRequiredAction')}`)
+      showAdminModal.value = true
       loading.value = false
       return
     }
@@ -93,7 +94,7 @@ async function handleStop(name: string) {
   loading.value = true
   try {
     if (!isAdmin.value) {
-      alert(`${t('adminRequiredBanner')}\n${t('adminRequiredAction')}`)
+      showAdminModal.value = true
       loading.value = false
       return
     }
@@ -359,5 +360,24 @@ onMounted(() => {
       @close="showRename = false"
       @rename="handleRename"
     />
+
+    <Teleport to="body">
+      <div
+        v-if="showAdminModal"
+        class="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      >
+        <div class="absolute inset-0 bg-black/60" @click="showAdminModal = false" />
+        <div class="relative glass-card w-full max-w-md p-6">
+          <h3 class="text-lg font-semibold text-white/90 mb-3">{{ t('adminRequiredTitle') }}</h3>
+          <p class="text-sm text-amber-200 mb-2">{{ t('adminRequiredBanner') }}</p>
+          <p class="text-sm text-white/70 mb-5">{{ t('adminRequiredAction') }}</p>
+          <div class="flex justify-end">
+            <button class="glass-button text-white/80" @click="showAdminModal = false">
+              {{ t('gotIt') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

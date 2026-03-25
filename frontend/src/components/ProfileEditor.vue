@@ -51,6 +51,8 @@ watch(() => props.hostsText, (v) => {
 function validateHosts(text: string) {
   const warnings: string[] = []
   const lines = text.split('\n')
+  let invalidIP = false
+  let invalidDomain = false
   for (const line of lines) {
     const trimmed = line.trim()
     if (!trimmed || trimmed.startsWith('#')) continue
@@ -68,8 +70,19 @@ function validateHosts(text: string) {
         warnings.push(t('hostsWarningLoopback'))
         break
       }
+      if (!isValidIP(ip)) {
+        invalidIP = true
+      }
+    }
+    if (parts.length >= 2) {
+      const domain = parts[1]
+      if (!isValidDomain(domain)) {
+        invalidDomain = true
+      }
     }
   }
+  if (invalidIP) warnings.push(t('hostsWarningInvalidIP'))
+  if (invalidDomain) warnings.push(t('hostsWarningInvalidDomain'))
   hostsWarnings.value = warnings
 }
 
@@ -106,6 +119,7 @@ const findMatches = ref<number[]>([])
 const currentMatchIndex = ref(0)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const lineNumberRef = ref<HTMLDivElement | null>(null)
+const ruleFilter = ref('')
 
 type ParsedLine = {
   lineNo: number
@@ -126,6 +140,9 @@ const parsedLines = computed<ParsedLine[]>(() => {
     }
     const commentedMapping = raw.match(/^\s*#\s*([0-9a-fA-F:.]+)\s+([^\s#]+)\s*$/)
     if (commentedMapping) {
+      if (!isValidIP(commentedMapping[1]) || !isValidDomain(commentedMapping[2])) {
+        return { lineNo, raw, type: 'invalid' }
+      }
       return {
         lineNo,
         raw,
@@ -137,6 +154,9 @@ const parsedLines = computed<ParsedLine[]>(() => {
     }
     const mapping = raw.match(/^\s*([0-9a-fA-F:.]+)\s+([^\s#]+)\s*$/)
     if (mapping) {
+      if (!isValidIP(mapping[1]) || !isValidDomain(mapping[2])) {
+        return { lineNo, raw, type: 'invalid' }
+      }
       return {
         lineNo,
         raw,
@@ -154,6 +174,11 @@ const parsedLines = computed<ParsedLine[]>(() => {
 })
 
 const toggleableRules = computed(() => parsedLines.value.filter(l => l.type === 'mapping'))
+const filteredToggleableRules = computed(() => {
+  const q = ruleFilter.value.trim().toLowerCase()
+  if (!q) return toggleableRules.value
+  return toggleableRules.value.filter(r => (r.domain || '').toLowerCase().includes(q))
+})
 const lineNumbers = computed(() => parsedLines.value.map(l => l.lineNo))
 
 function toggleRule(lineNo: number, enabled: boolean) {
@@ -170,6 +195,40 @@ function toggleRule(lineNo: number, enabled: boolean) {
   }
   editedText.value = lines.join('\n')
   onEdit()
+}
+
+function toggleAllRules(enabled: boolean) {
+  const lines = editedText.value.split('\n')
+  for (const rule of toggleableRules.value) {
+    const idx = rule.lineNo - 1
+    if (idx < 0 || idx >= lines.length) continue
+    const line = lines[idx]
+    if (enabled) {
+      lines[idx] = line.replace(/^(\s*)#\s*/, '$1')
+    } else if (!/^\s*#/.test(line)) {
+      lines[idx] = line.replace(/^(\s*)/, '$1# ')
+    }
+  }
+  editedText.value = lines.join('\n')
+  onEdit()
+}
+
+function isValidIP(ip: string): boolean {
+  const ipv4 =
+    /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/
+  if (ipv4.test(ip)) return true
+  // Lightweight IPv6 acceptance
+  if (ip.includes(':') && /^[0-9a-fA-F:]+$/.test(ip)) return true
+  return false
+}
+
+function isValidDomain(domain: string): boolean {
+  // Allow localhost and standard hostnames/domains
+  if (domain === 'localhost') return true
+  if (domain.length > 253) return false
+  const labels = domain.split('.')
+  if (labels.some(l => !l || l.length > 63)) return false
+  return labels.every(l => /^[a-zA-Z0-9-]+$/.test(l) && !l.startsWith('-') && !l.endsWith('-'))
 }
 
 function handleKeydown(e: KeyboardEvent) {
@@ -366,10 +425,22 @@ function onEditorScroll() {
 
       <div class="grid grid-cols-2 gap-3 mb-3">
         <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 max-h-32 overflow-y-auto scrollbar-thin">
-          <div class="text-xs text-white/70 mb-2">{{ t('rulesPanel') }}</div>
+          <div class="flex items-center justify-between mb-2 gap-2">
+            <div class="text-xs text-white/70">{{ t('rulesPanel') }}</div>
+            <div class="flex items-center gap-1">
+              <button class="glass-button text-[11px] px-2 py-1" @click="toggleAllRules(true)">{{ t('enableAll') }}</button>
+              <button class="glass-button text-[11px] px-2 py-1" @click="toggleAllRules(false)">{{ t('disableAll') }}</button>
+            </div>
+          </div>
+          <input
+            v-model="ruleFilter"
+            type="text"
+            :placeholder="t('ruleFilter')"
+            class="glass-input text-xs mb-2 py-2"
+          />
           <div v-if="toggleableRules.length === 0" class="text-xs text-white/40">{{ t('noHostMappings') }}</div>
           <label
-            v-for="rule in toggleableRules"
+            v-for="rule in filteredToggleableRules"
             :key="`${rule.lineNo}-${rule.domain}`"
             class="flex items-center gap-2 text-xs text-white/80 py-1"
           >
