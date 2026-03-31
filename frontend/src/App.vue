@@ -22,6 +22,13 @@ interface Profile {
   proxy_error?: string
 }
 
+interface ActiveConflict {
+  domain: string
+  profiles: string[]
+  ips: string[]
+  count: number
+}
+
 const profiles = ref<Profile[]>([])
 const selectedProfile = ref<Profile | null>(null)
 const showAddModal = ref(false)
@@ -33,6 +40,7 @@ const hostsText = ref('')
 const searchQuery = ref('')
 const isAdmin = ref(true)
 const showAdminModal = ref(false)
+const showConflictPanel = ref(true)
 
 const filteredProfiles = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
@@ -51,6 +59,36 @@ const filteredProfiles = computed(() => {
 })
 
 const usedPorts = computed(() => profiles.value.map(p => p.port))
+
+const activeConflicts = computed<ActiveConflict[]>(() => {
+  const domainMap = new Map<string, { profiles: Set<string>; ips: Set<string> }>()
+  for (const p of profiles.value) {
+    if (!p.system_hosts_active) continue
+    for (const [domainRaw, ipRaw] of Object.entries(p.hosts || {})) {
+      const domain = String(domainRaw || '').trim().toLowerCase()
+      const ip = String(ipRaw || '').trim()
+      if (!domain || !ip) continue
+      if (!domainMap.has(domain)) {
+        domainMap.set(domain, { profiles: new Set<string>(), ips: new Set<string>() })
+      }
+      const node = domainMap.get(domain)!
+      node.profiles.add(p.name)
+      node.ips.add(ip)
+    }
+  }
+  const out: ActiveConflict[] = []
+  for (const [domain, node] of domainMap.entries()) {
+    if (node.profiles.size <= 1) continue
+    out.push({
+      domain,
+      profiles: Array.from(node.profiles).sort(),
+      ips: Array.from(node.ips).sort(),
+      count: node.profiles.size,
+    })
+  }
+  out.sort((a, b) => a.domain.localeCompare(b.domain))
+  return out
+})
 
 async function loadProfiles() {
   try {
@@ -258,6 +296,29 @@ onMounted(() => {
         class="absolute top-12 left-6 right-6 z-10 rounded-xl border border-amber-500/40 bg-amber-500/15 px-4 py-2 text-amber-200 text-sm"
       >
         {{ t('adminRequiredBanner') }} · {{ t('adminRequiredAction') }}
+      </div>
+      <div
+        v-if="activeConflicts.length > 0"
+        class="absolute top-12 left-6 right-6 z-10 rounded-xl border border-rose-500/40 bg-rose-500/15 px-4 py-3 text-rose-100 text-sm"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <div class="font-medium">
+            {{ t('activeConflictTitle', { count: activeConflicts.length }) }}
+          </div>
+          <button class="glass-button text-xs px-2 py-1" @click="showConflictPanel = !showConflictPanel">
+            {{ showConflictPanel ? t('collapseHistory') : t('expandHistory') }}
+          </button>
+        </div>
+        <div v-if="showConflictPanel" class="mt-2 max-h-28 overflow-y-auto scrollbar-thin space-y-1">
+          <div v-for="c in activeConflicts.slice(0, 20)" :key="c.domain" class="text-xs">
+            <span class="font-mono text-rose-200">{{ c.domain }}</span>
+            <span class="text-rose-100/90"> · {{ c.profiles.join(', ') }}</span>
+            <span class="text-rose-100/70"> · {{ c.ips.join(' / ') }}</span>
+          </div>
+          <div v-if="activeConflicts.length > 20" class="text-xs text-rose-100/70">
+            {{ t('activeConflictMore', { count: activeConflicts.length - 20 }) }}
+          </div>
+        </div>
       </div>
       <!-- Left Panel: Profile List -->
       <div class="w-80 flex flex-col gap-4">
