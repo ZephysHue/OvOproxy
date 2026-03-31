@@ -243,6 +243,12 @@ function selectProfile(profile: Profile) {
   loadHostsText(profile.name)
 }
 
+function jumpToProfile(name: string) {
+  const target = profiles.value.find((p) => p.name === name)
+  if (!target) return
+  selectProfile(target)
+}
+
 onMounted(() => {
   loadProfiles()
   IsAdmin().then(v => { isAdmin.value = !!v }).catch(() => { isAdmin.value = false })
@@ -312,7 +318,16 @@ onMounted(() => {
         <div v-if="showConflictPanel" class="mt-2 max-h-28 overflow-y-auto scrollbar-thin space-y-1">
           <div v-for="c in activeConflicts.slice(0, 20)" :key="c.domain" class="text-xs">
             <span class="font-mono text-rose-200">{{ c.domain }}</span>
-            <span class="text-rose-100/90"> · {{ c.profiles.join(', ') }}</span>
+            <span class="text-rose-100/90"> · </span>
+            <template v-for="(pn, idx) in c.profiles" :key="`${c.domain}-${pn}`">
+              <button
+                class="glass-button text-[11px] px-2 py-0.5 mr-1 mb-1 text-rose-100 border-rose-300/30"
+                @click="jumpToProfile(pn)"
+              >
+                {{ t('jumpToProfile') }}: {{ pn }}
+              </button>
+              <span v-if="idx < c.profiles.length - 1" class="text-rose-100/50"></span>
+            </template>
             <span class="text-rose-100/70"> · {{ c.ips.join(' / ') }}</span>
           </div>
           <div v-if="activeConflicts.length > 20" class="text-xs text-rose-100/70">
