@@ -387,8 +387,6 @@ function onEditorScroll() {
           <button
             class="glass-button text-white/80 hover:bg-slate-700"
             @click="emit('rename', profile.name)"
-            :disabled="profile.system_hosts_active"
-            :class="{ 'opacity-50 cursor-not-allowed': profile.system_hosts_active }"
           >
             {{ t('rename') }}
           </button>

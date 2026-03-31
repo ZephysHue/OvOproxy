@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -72,22 +73,21 @@ func (a *App) startTray() {
 
 			updateTrayStatus := func() {
 				a.mu.RLock()
-				activeName := ""
+				activeNames := make([]string, 0)
 				activeSet := map[string]bool{}
 				for _, p := range a.profiles {
 					if p.SystemHostsActive {
-						if activeName == "" {
-							activeName = p.Name
-						}
+						activeNames = append(activeNames, p.Name)
 						activeSet[p.Name] = true
 					}
 				}
 				a.mu.RUnlock()
 
-				if activeName == "" {
+				sort.Strings(activeNames)
+				if len(activeNames) == 0 {
 					currentItem.SetTitle("当前启用 / Active: (none)")
 				} else {
-					currentItem.SetTitle(fmt.Sprintf("当前启用 / Active: %s", activeName))
+					currentItem.SetTitle(fmt.Sprintf("当前启用 / Active: %s", strings.Join(activeNames, ", ")))
 				}
 				for name, item := range profileEnableItems {
 					if activeSet[name] {

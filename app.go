@@ -438,7 +438,7 @@ func (a *App) IsAdmin() (bool, error) {
 }
 
 // StartProfile == 启用 Profile：写入系统 hosts 的该 Profile 标记块
-// 默认单启用策略：启用新 Profile 时自动禁用其他 enabled 的 Profile
+// 支持多 Profile 同时启用：不再自动禁用其他已启用配置
 func (a *App) StartProfile(name string) error {
 	a.mu.RLock()
 	var hostsPath string
@@ -485,19 +485,6 @@ func (a *App) StartProfile(name string) error {
 		lines = append(lines, fmt.Sprintf("%s %s", e.IP, e.Domain))
 	}
 
-	a.mu.RLock()
-	var otherEnabled []string
-	for i := range a.profiles {
-		if a.profiles[i].SystemHostsActive && a.profiles[i].Name != name {
-			otherEnabled = append(otherEnabled, a.profiles[i].Name)
-		}
-	}
-	a.mu.RUnlock()
-
-	for _, other := range otherEnabled {
-		_ = winhosts.RemoveProfileBlock(other, false)
-	}
-
 	if err := winhosts.ApplyProfileBlock(name, lines, true); err != nil {
 		a.addAudit("hosts.enable_profile", name, "apply profile block failed: "+err.Error(), false)
 		return err
@@ -506,8 +493,10 @@ func (a *App) StartProfile(name string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	for i := range a.profiles {
-		a.profiles[i].SystemHostsActive = (a.profiles[i].Name == name)
-		a.profiles[i].Running = (a.profiles[i].Name == name)
+		if a.profiles[i].Name == name {
+			a.profiles[i].SystemHostsActive = true
+			a.profiles[i].Running = true
+		}
 	}
 	go a.addAudit("hosts.enable_profile", name, "enabled profile block", true)
 	return nil
@@ -645,18 +634,20 @@ func (a *App) DeleteProfile(name string) error {
 
 func (a *App) RenameProfile(oldName, newName string) error {
 	a.mu.Lock()
-	defer a.mu.Unlock()
 
 	oldName = strings.TrimSpace(oldName)
 	newName = strings.TrimSpace(newName)
 	if oldName == "" || newName == "" {
+		a.mu.Unlock()
 		return fmt.Errorf("name is required")
 	}
 	if oldName == newName {
+		a.mu.Unlock()
 		return nil
 	}
 	for _, p := range a.profiles {
 		if p.Name == newName {
+			a.mu.Unlock()
 			return fmt.Errorf("profile %s already exists", newName)
 		}
 	}
@@ -665,8 +656,12 @@ func (a *App) RenameProfile(oldName, newName string) error {
 		if a.profiles[i].Name != oldName {
 			continue
 		}
-		if a.profiles[i].Running {
-			return fmt.Errorf("cannot rename running profile")
+		wasActive := a.profiles[i].SystemHostsActive
+		listenIP := a.profiles[i].ListenIP
+		port := a.profiles[i].Port
+		hostsRules := make(map[string]string, len(a.profiles[i].Hosts))
+		for k, v := range a.profiles[i].Hosts {
+			hostsRules[k] = v
 		}
 
 		// Attempt to rename default hosts file path if it follows configs/hosts/<name>.hosts
@@ -687,12 +682,29 @@ func (a *App) RenameProfile(oldName, newName string) error {
 		a.profiles[i].Name = newName
 		a.refreshProfileHostsLocked(i)
 		if err := a.saveConfig(); err != nil {
+			a.mu.Unlock()
 			go a.addAudit("profile.rename", oldName, "save config failed: "+err.Error(), false)
 			return err
 		}
+		a.mu.Unlock()
+
+		a.proxyManager.StopProxy(oldName)
+		_ = a.proxyManager.StartProxy(newName, listenIP, port, hostsRules)
+		a.refreshProxyStatus()
+		a.refreshAutoSchedulers()
+
+		if wasActive {
+			_ = winhosts.RemoveProfileBlock(oldName, false)
+			if err := a.StartProfile(newName); err != nil {
+				go a.addAudit("profile.rename", newName, "re-apply active block failed: "+err.Error(), false)
+				return err
+			}
+		}
+
 		go a.addAudit("profile.rename", newName, "renamed from "+oldName, true)
 		return nil
 	}
+	a.mu.Unlock()
 	go a.addAudit("profile.rename", oldName, "profile not found", false)
 	return fmt.Errorf("profile %s not found", oldName)
 }
