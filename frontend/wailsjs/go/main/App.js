@@ -6,20 +6,12 @@ export function AddProfile(arg1, arg2, arg3) {
   return window['go']['main']['App']['AddProfile'](arg1, arg2, arg3);
 }
 
-export function AddProfileSubscription(arg1, arg2, arg3) {
-  return window['go']['main']['App']['AddProfileSubscription'](arg1, arg2, arg3);
-}
-
 export function ClearHostsEntries(arg1) {
   return window['go']['main']['App']['ClearHostsEntries'](arg1);
 }
 
 export function CreateHostsBackup(arg1) {
   return window['go']['main']['App']['CreateHostsBackup'](arg1);
-}
-
-export function DedupHosts(arg1) {
-  return window['go']['main']['App']['DedupHosts'](arg1);
 }
 
 export function DeleteProfile(arg1) {
@@ -30,16 +22,8 @@ export function ExportHostsToDialog(arg1) {
   return window['go']['main']['App']['ExportHostsToDialog'](arg1);
 }
 
-export function GetAuditLogs(arg1) {
-  return window['go']['main']['App']['GetAuditLogs'](arg1);
-}
-
 export function GetHostsText(arg1) {
   return window['go']['main']['App']['GetHostsText'](arg1);
-}
-
-export function GetProfileSubscriptions(arg1) {
-  return window['go']['main']['App']['GetProfileSubscriptions'](arg1);
 }
 
 export function GetProfiles() {
@@ -50,28 +34,8 @@ export function GetProxyAddress(arg1) {
   return window['go']['main']['App']['GetProxyAddress'](arg1);
 }
 
-export function GetProxyLogs(arg1, arg2) {
-  return window['go']['main']['App']['GetProxyLogs'](arg1, arg2);
-}
-
-export function GetSubscriptionRefreshHistory(arg1, arg2) {
-  return window['go']['main']['App']['GetSubscriptionRefreshHistory'](arg1, arg2);
-}
-
-export function GetSubscriptionRefreshSettings(arg1) {
-  return window['go']['main']['App']['GetSubscriptionRefreshSettings'](arg1);
-}
-
-export function ImportHostsFromDialog(arg1) {
-  return window['go']['main']['App']['ImportHostsFromDialog'](arg1);
-}
-
 export function IsAdmin() {
   return window['go']['main']['App']['IsAdmin']();
-}
-
-export function IsSubscriptionRefreshRunning(arg1) {
-  return window['go']['main']['App']['IsSubscriptionRefreshRunning'](arg1);
 }
 
 export function ListHostsBackups(arg1) {
@@ -82,28 +46,8 @@ export function LoadConfig() {
   return window['go']['main']['App']['LoadConfig']();
 }
 
-export function PreviewSubscriptionConflicts(arg1, arg2) {
-  return window['go']['main']['App']['PreviewSubscriptionConflicts'](arg1, arg2);
-}
-
-export function RefreshProfileSubscriptions(arg1) {
-  return window['go']['main']['App']['RefreshProfileSubscriptions'](arg1);
-}
-
-export function RefreshProfileSubscriptionsWithReport(arg1) {
-  return window['go']['main']['App']['RefreshProfileSubscriptionsWithReport'](arg1);
-}
-
-export function RefreshSingleProfileSubscription(arg1, arg2) {
-  return window['go']['main']['App']['RefreshSingleProfileSubscription'](arg1, arg2);
-}
-
 export function RelaunchAsAdmin() {
   return window['go']['main']['App']['RelaunchAsAdmin']();
-}
-
-export function RemoveProfileSubscription(arg1, arg2) {
-  return window['go']['main']['App']['RemoveProfileSubscription'](arg1, arg2);
 }
 
 export function RenameProfile(arg1, arg2) {
@@ -114,28 +58,12 @@ export function ResetHostsTemplate(arg1) {
   return window['go']['main']['App']['ResetHostsTemplate'](arg1);
 }
 
-export function ResolveSubscriptionConflicts(arg1, arg2, arg3) {
-  return window['go']['main']['App']['ResolveSubscriptionConflicts'](arg1, arg2, arg3);
-}
-
 export function RestoreHostsBackup(arg1, arg2) {
   return window['go']['main']['App']['RestoreHostsBackup'](arg1, arg2);
 }
 
-export function RetryFailedProfileSubscriptions(arg1) {
-  return window['go']['main']['App']['RetryFailedProfileSubscriptions'](arg1);
-}
-
-export function SetAllProfileSubscriptionsEnabled(arg1, arg2) {
-  return window['go']['main']['App']['SetAllProfileSubscriptionsEnabled'](arg1, arg2);
-}
-
 export function SetHostsText(arg1, arg2) {
   return window['go']['main']['App']['SetHostsText'](arg1, arg2);
-}
-
-export function SetProfileSubscriptionEnabled(arg1, arg2, arg3) {
-  return window['go']['main']['App']['SetProfileSubscriptionEnabled'](arg1, arg2, arg3);
 }
 
 export function StartProfile(arg1) {
@@ -148,16 +76,4 @@ export function StopAllProfiles() {
 
 export function StopProfile(arg1) {
   return window['go']['main']['App']['StopProfile'](arg1);
-}
-
-export function UpdateHosts(arg1, arg2) {
-  return window['go']['main']['App']['UpdateHosts'](arg1, arg2);
-}
-
-export function UpdateProfileSubscription(arg1, arg2, arg3, arg4) {
-  return window['go']['main']['App']['UpdateProfileSubscription'](arg1, arg2, arg3, arg4);
-}
-
-export function UpdateSubscriptionRefreshSettings(arg1, arg2, arg3, arg4, arg5) {
-  return window['go']['main']['App']['UpdateSubscriptionRefreshSettings'](arg1, arg2, arg3, arg4, arg5);
 }
