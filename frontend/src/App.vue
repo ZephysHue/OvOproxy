@@ -26,6 +26,7 @@ interface ActiveConflict {
   profiles: string[]
   ips: string[]
   count: number
+  isRealConflict: boolean
 }
 
 const profiles = ref<Profile[]>([])
@@ -84,11 +85,15 @@ const activeConflicts = computed<ActiveConflict[]>(() => {
       profiles: Array.from(node.profiles).sort(),
       ips: Array.from(node.ips).sort(),
       count: node.profiles.size,
+      isRealConflict: node.ips.size > 1,
     })
   }
   out.sort((a, b) => a.domain.localeCompare(b.domain))
   return out
 })
+
+const realConflicts = computed(() => activeConflicts.value.filter(c => c.isRealConflict))
+const sameIpWarnings = computed(() => activeConflicts.value.filter(c => !c.isRealConflict))
 
 async function loadProfiles() {
   try {
@@ -321,45 +326,45 @@ onUnmounted(() => {
     </div>
 
     <!-- Main Content -->
-    <div class="flex-1 flex gap-6 p-6 overflow-hidden relative">
-      <div
-        v-if="!isAdmin"
-        class="absolute top-12 left-6 right-6 z-10 rounded-xl border border-amber-500/40 bg-amber-500/15 px-4 py-2 text-amber-200 text-sm"
-      >
-        {{ t('adminRequiredBanner') }} · {{ t('adminRequiredAction') }}
-      </div>
-      <div
-        v-if="activeConflicts.length > 0"
-        class="absolute top-12 left-6 right-6 z-10 rounded-xl border border-rose-500/40 bg-rose-500/15 px-4 py-3 text-rose-100 text-sm"
-      >
-        <div class="flex items-center justify-between gap-2">
-          <div class="font-medium">
-            {{ t('activeConflictTitle', { count: activeConflicts.length }) }}
-          </div>
-          <button class="glass-button text-xs px-2 py-1" @click="showConflictPanel = !showConflictPanel">
-            {{ showConflictPanel ? t('collapseHistory') : t('expandHistory') }}
-          </button>
+    <div class="flex-1 flex gap-6 p-6 overflow-hidden">
+      <!-- Conflict Warning Banner -->
+      <div v-if="activeConflicts.length > 0 || !isAdmin" class="w-80 flex-shrink-0 space-y-2">
+        <!-- Admin Warning -->
+        <div
+          v-if="!isAdmin"
+          class="rounded-xl border border-amber-500/40 bg-amber-500/12 px-3 py-2 text-amber-200 text-xs"
+        >
+          {{ t('adminRequiredBanner') }} · {{ t('adminRequiredAction') }}
         </div>
-        <div v-if="showConflictPanel" class="mt-2 max-h-28 overflow-y-auto scrollbar-thin space-y-1">
-          <div v-for="c in activeConflicts.slice(0, 20)" :key="c.domain" class="text-xs">
-            <span class="font-mono text-rose-200">{{ c.domain }}</span>
-            <span class="text-rose-100/90"> · </span>
-            <template v-for="(pn, idx) in c.profiles" :key="`${c.domain}-${pn}`">
-              <button
-                class="glass-button text-[11px] px-2 py-0.5 mr-1 mb-1 text-rose-100 border-rose-300/30"
-                @click="jumpToProfile(pn)"
-              >
-                {{ t('jumpToProfile') }}: {{ pn }}
-              </button>
-              <span v-if="idx < c.profiles.length - 1" class="text-rose-100/50"></span>
-            </template>
-            <span class="text-rose-100/70"> · {{ c.ips.join(' / ') }}</span>
+        <!-- Real Conflicts (different IPs) -->
+        <div
+          v-if="realConflicts.length > 0"
+          class="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2.5 text-red-200 text-sm"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <div class="font-medium text-xs">
+              {{ t('conflictDiffCount', { count: realConflicts.length }) }}
+            </div>
+            <button class="glass-button text-[11px] px-2 py-0.5" @click="showConflictPanel = !showConflictPanel">
+              {{ showConflictPanel ? '收起' : '展开' }}
+            </button>
           </div>
-          <div v-if="activeConflicts.length > 20" class="text-xs text-rose-100/70">
-            {{ t('activeConflictMore', { count: activeConflicts.length - 20 }) }}
+          <div v-if="showConflictPanel" class="mt-1.5 max-h-36 overflow-y-auto scrollbar-thin space-y-1">
+            <div v-for="c in realConflicts" :key="c.domain" class="text-xs">
+              <span class="font-mono text-red-300">{{ c.domain }}</span>
+              <span class="text-red-100/70"> · {{ c.ips.join(' / ') }}</span>
+            </div>
           </div>
         </div>
+        <!-- Same-IP Warnings (informational, not errors) -->
+        <div
+          v-if="sameIpWarnings.length > 0"
+          class="rounded-xl border border-amber-500/30 bg-amber-500/8 px-3 py-2 text-amber-200/90 text-xs"
+        >
+          <span>{{ t('conflictSameCount', { count: sameIpWarnings.length }) }}</span>
+        </div>
       </div>
+
       <!-- Left Panel: Profile List -->
       <div class="w-80 flex flex-col gap-4">
         <div class="flex items-center justify-between">
