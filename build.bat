@@ -8,7 +8,7 @@ echo === 准备图标 ===
 mkdir build 2>nul
 copy /y "appicon.png" "build\appicon.png" >nul
 echo === 编译 ===
-wails build -clean
+wails build
 echo === 复制到 release ===
 copy /y "build\bin\HostOVO.exe" "release\HostOVO.exe"
 echo === 完成: release\HostOVO.exe ===
