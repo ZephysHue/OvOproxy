@@ -133,6 +133,57 @@ func ParseText(text string) ([]Entry, map[string]int, error) {
 	return entries, counts, nil
 }
 
+// NormalizeText expands multi-domain lines ("1.2.3.4 a.com b.com") into
+// one-domain-per-line format, preserving comments and blank lines.
+func NormalizeText(text string) string {
+	useCRLF := strings.Contains(text, "\r\n")
+	lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
+
+	out := make([]string, 0, len(lines))
+	for _, raw := range lines {
+		trimmed := strings.TrimSpace(raw)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			out = append(out, raw)
+			continue
+		}
+
+		var comment string
+		working := raw
+		if idx := strings.Index(trimmed, "#"); idx > 0 {
+			commentStart := strings.Index(raw, "#")
+			comment = strings.TrimSpace(raw[commentStart:])
+			working = raw[:commentStart]
+		}
+
+		parts := strings.Fields(strings.TrimSpace(working))
+		if len(parts) < 2 {
+			out = append(out, raw)
+			continue
+		}
+
+		ip := parts[0]
+		domains := parts[1:]
+		if len(domains) <= 1 {
+			out = append(out, raw)
+			continue
+		}
+
+		for j, d := range domains {
+			line := ip + " " + d
+			if j == 0 && comment != "" {
+				line += " " + comment
+			}
+			out = append(out, line)
+		}
+	}
+
+	joined := strings.Join(out, "\n")
+	if useCRLF {
+		joined = strings.ReplaceAll(joined, "\n", "\r\n")
+	}
+	return joined
+}
+
 func DedupTextKeepLast(text string) (string, int) {
 	// Determine line ending style
 	useCRLF := strings.Contains(text, "\r\n")
@@ -243,10 +294,29 @@ func DedupEntriesKeepLast(entries []Entry) []Entry {
 	return out
 }
 
+// DedupEntriesKeepFirst keeps the first occurrence of each domain,
+// matching standard OS hosts resolution behavior (first match wins).
+func DedupEntriesKeepFirst(entries []Entry) []Entry {
+	seen := make(map[string]struct{}, len(entries))
+	out := make([]Entry, 0, len(entries))
+	for _, e := range entries {
+		if _, ok := seen[e.Domain]; ok {
+			continue
+		}
+		seen[e.Domain] = struct{}{}
+		out = append(out, e)
+	}
+	return out
+}
+
+// EntriesToMap keeps the first occurrence of each domain,
+// matching standard OS hosts resolution behavior (first match wins).
 func EntriesToMap(entries []Entry) map[string]string {
 	m := make(map[string]string, len(entries))
 	for _, e := range entries {
-		m[e.Domain] = e.IP
+		if _, exists := m[e.Domain]; !exists {
+			m[e.Domain] = e.IP
+		}
 	}
 	return m
 }

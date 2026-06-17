@@ -2,10 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import { t } from '../i18n'
 import { GetProxyAddress } from '../../wailsjs/go/main/App'
-import DiagnosticsPanel from './DiagnosticsPanel.vue'
 import BackupPanel from './BackupPanel.vue'
-import SubscriptionPanel from './SubscriptionPanel.vue'
-import AuditPanel from './AuditPanel.vue'
 
 interface Profile {
   name: string
@@ -21,26 +18,18 @@ interface Profile {
 const props = defineProps<{
   profile: Profile
   hostsText: string
-  duplicates: Array<{ domain: string; count: number }>
 }>()
 
 const emit = defineEmits<{
   saveText: [name: string, text: string, confirmedRisk?: boolean]
-  delete: [name: string]
   start: [name: string]
   stop: [name: string]
-  importHosts: [name: string]
-  exportHosts: [name: string]
-  dedup: [name: string]
-  rename: [name: string]
   reloadHosts: [name: string]
 }>()
 
 const editedText = ref('')
 const hasChanges = ref(false)
 const copiedMsg = ref(false)
-const showDiagnostics = ref(false)
-const showAudit = ref(false)
 const hostsWarnings = ref<string[]>([])
 const showRiskConfirm = ref(false)
 const riskPreview = ref<string[]>([])
@@ -103,12 +92,6 @@ function getRiskLines(text: string): string[] {
     }
   }
   return risky
-}
-
-function confirmDelete() {
-  if (confirm(`${t('delete')} "${props.profile.name}"?`)) {
-    emit('delete', props.profile.name)
-  }
 }
 
 function saveChanges() {
@@ -248,13 +231,11 @@ function isValidIP(ip: string): boolean {
   const ipv4 =
     /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/
   if (ipv4.test(ip)) return true
-  // Lightweight IPv6 acceptance
   if (ip.includes(':') && /^[0-9a-fA-F:]+$/.test(ip)) return true
   return false
 }
 
 function isValidDomain(domain: string): boolean {
-  // Allow localhost and standard hostnames/domains
   if (domain === 'localhost') return true
   if (domain.length > 253) return false
   const labels = domain.split('.')
@@ -373,24 +354,6 @@ function onEditorScroll() {
             {{ copiedMsg ? t('copied') : t('copyProxyAddr') }}
           </button>
           <button
-            class="glass-button text-white/80 hover:bg-slate-700"
-            @click="emit('importHosts', profile.name)"
-          >
-            {{ t('import') }}
-          </button>
-          <button
-            class="glass-button text-white/80 hover:bg-slate-700"
-            @click="emit('exportHosts', profile.name)"
-          >
-            {{ t('export') }}
-          </button>
-          <button
-            class="glass-button text-white/80 hover:bg-slate-700"
-            @click="emit('rename', profile.name)"
-          >
-            {{ t('rename') }}
-          </button>
-          <button
             class="glass-button"
             :class="profile.system_hosts_active 
               ? 'text-red-300 hover:bg-red-500/20'
@@ -402,28 +365,18 @@ function onEditorScroll() {
             {{ profile.system_hosts_active ? t('disableHosts') : t('enableHosts') }}
           </button>
           <button
-            class="glass-button text-red-400 hover:bg-red-500/20"
-            :disabled="profile.system_hosts_active"
-            :class="{ 'opacity-50 cursor-not-allowed': profile.system_hosts_active }"
-            @click="confirmDelete"
+            v-if="hasChanges"
+            class="glass-button bg-blue-500/30 text-blue-200 hover:bg-blue-500/40 border-blue-400/30"
+            @click="saveChanges"
           >
-            {{ t('delete') }}
+            {{ t('saveChanges') }}
           </button>
         </div>
       </div>
     </div>
 
-    <!-- Hosts Editor (Notepad-like) -->
+    <!-- Hosts Editor -->
     <div class="flex-1 p-5 flex flex-col">
-      <div v-if="duplicates.length > 0" class="mb-4 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-between">
-        <div class="text-amber-200 text-sm">
-          {{ t('duplicatesFound', { count: duplicates.length }) }}
-        </div>
-        <button class="glass-button text-amber-200 hover:bg-amber-500/20 border-amber-500/30" @click="emit('dedup', profile.name)">
-          {{ t('dedupe') }}
-        </button>
-      </div>
-
       <div v-if="hostsWarnings.length > 0" class="mb-4 p-3 rounded-xl bg-orange-500/15 border border-orange-500/30">
         <div v-for="warn in hostsWarnings" :key="warn" class="text-orange-200 text-sm">
           {{ warn }}
@@ -432,81 +385,39 @@ function onEditorScroll() {
 
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-white/80 font-medium">{{ t('hostMappings') }}</h3>
-        <div class="flex items-center gap-3">
-          <button
-            class="text-sm text-white/50 hover:text-white/80"
-            @click="showDiagnostics = !showDiagnostics"
-          >
-            {{ t('diagnostics') }} {{ showDiagnostics ? '▼' : '▶' }}
-          </button>
-          <button
-            class="text-sm text-white/50 hover:text-white/80"
-            @click="showAudit = !showAudit"
-          >
-            {{ t('auditLogs') }} {{ showAudit ? '▼' : '▶' }}
-          </button>
-          <span class="text-sm text-white/40">{{ profile.hosts_file }}</span>
-        </div>
+        <span class="text-sm text-white/40">{{ profile.hosts_file }}</span>
       </div>
 
-      <DiagnosticsPanel
-        v-if="showDiagnostics"
-        :profile-name="profile.name"
-        :proxy-address="proxyAddress"
-        class="mb-4"
-      />
-      <AuditPanel
-        v-if="showAudit"
-        :profile-name="profile.name"
-        class="mb-4"
-      />
-
-      <SubscriptionPanel :profile-name="profile.name" @changed="emit('reloadHosts', profile.name)" />
       <BackupPanel :profile-name="profile.name" @changed="emit('reloadHosts', profile.name)" />
 
-      <div class="grid grid-cols-2 gap-3 mb-3">
-        <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 max-h-32 overflow-y-auto scrollbar-thin">
-          <div class="flex items-center justify-between mb-2 gap-2">
-            <div class="text-xs text-white/70">{{ t('rulesPanel') }}</div>
-            <div class="flex items-center gap-1">
-              <button class="glass-button text-[11px] px-2 py-1" @click="toggleAllRules(true)">{{ t('enableAll') }}</button>
-              <button class="glass-button text-[11px] px-2 py-1" @click="toggleAllRules(false)">{{ t('disableAll') }}</button>
-            </div>
+      <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 max-h-32 overflow-y-auto scrollbar-thin mb-3">
+        <div class="flex items-center justify-between mb-2 gap-2">
+          <div class="text-xs text-white/70">{{ t('rulesPanel') }}</div>
+          <div class="flex items-center gap-1">
+            <button class="glass-button text-[11px] px-2 py-1" @click="toggleAllRules(true)">{{ t('enableAll') }}</button>
+            <button class="glass-button text-[11px] px-2 py-1" @click="toggleAllRules(false)">{{ t('disableAll') }}</button>
           </div>
+        </div>
+        <input
+          v-model="ruleFilter"
+          type="text"
+          :placeholder="t('ruleFilter')"
+          class="glass-input text-xs mb-2 py-2"
+        />
+        <div v-if="toggleableRules.length === 0" class="text-xs text-white/40">{{ t('noHostMappings') }}</div>
+        <label
+          v-for="rule in filteredToggleableRules"
+          :key="`${rule.lineNo}-${rule.domain}`"
+          class="flex items-center gap-2 text-xs text-white/80 py-1"
+        >
           <input
-            v-model="ruleFilter"
-            type="text"
-            :placeholder="t('ruleFilter')"
-            class="glass-input text-xs mb-2 py-2"
+            type="checkbox"
+            :checked="rule.enabled"
+            @change="toggleRule(rule.lineNo, ($event.target as HTMLInputElement).checked)"
           />
-          <div v-if="toggleableRules.length === 0" class="text-xs text-white/40">{{ t('noHostMappings') }}</div>
-          <label
-            v-for="rule in filteredToggleableRules"
-            :key="`${rule.lineNo}-${rule.domain}`"
-            class="flex items-center gap-2 text-xs text-white/80 py-1"
-          >
-            <input
-              type="checkbox"
-              :checked="rule.enabled"
-              @change="toggleRule(rule.lineNo, ($event.target as HTMLInputElement).checked)"
-            />
-            <span class="text-white/40">{{ t('line') }} {{ rule.lineNo }}</span>
-            <span class="truncate">{{ rule.domain }}</span>
-          </label>
-        </div>
-        <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 max-h-32 overflow-y-auto scrollbar-thin">
-          <div class="text-xs text-white/70 mb-2">{{ t('syntaxPreview') }}</div>
-          <div
-            v-for="lineItem in parsedLines"
-            :key="`preview-${lineItem.lineNo}`"
-            class="text-xs py-0.5 font-mono"
-            :class="lineItem.type === 'mapping' ? (lineItem.enabled ? 'text-emerald-300' : 'text-amber-300') : (lineItem.type === 'invalid' ? 'text-red-300' : 'text-white/40')"
-          >
-            <span class="text-white/40 mr-2">{{ lineItem.lineNo }}</span>
-            <span v-if="lineItem.type === 'invalid'">{{ t('invalidRule') }}: {{ lineItem.raw }}</span>
-            <span v-else>{{ lineItem.raw || ' ' }}</span>
-          </div>
-        </div>
+          <span class="text-white/40">{{ t('line') }} {{ rule.lineNo }}</span>
+          <span class="truncate">{{ rule.domain }}</span>
+        </label>
       </div>
 
       <!-- Find Bar (Ctrl+F) -->
@@ -557,18 +468,7 @@ function onEditorScroll() {
       </div>
     </div>
 
-    <!-- Footer: Save -->
-    <div v-if="hasChanges" class="p-4 border-t border-white/10 bg-blue-500/10">
-      <div class="flex items-center justify-between">
-        <span class="text-blue-300 text-sm">{{ t('unsavedChanges') }}</span>
-        <button
-          class="glass-button bg-blue-500/30 text-blue-200 hover:bg-blue-500/40 border-blue-400/30"
-          @click="saveChanges"
-        >
-          {{ t('saveChanges') }}
-        </button>
-      </div>
-    </div>
+    <!-- Risk Confirm Modal -->
     <Teleport to="body">
       <div
         v-if="showRiskConfirm"

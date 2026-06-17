@@ -418,6 +418,7 @@ func (a *App) SetHostsText(profileName string, text string) error {
 			a.addAudit("hosts.save_text", profileName, "mkdir failed: "+err.Error(), false)
 			return err
 		}
+		text = hosts.NormalizeText(text)
 		if err := os.WriteFile(hostsPath, []byte(text), 0644); err != nil {
 			a.mu.Unlock()
 			a.addAudit("hosts.save_text", profileName, "write failed: "+err.Error(), false)
@@ -479,9 +480,8 @@ func (a *App) StartProfile(name string) error {
 		return fmt.Errorf("parse profile hosts: %w", err)
 	}
 
-	dedup := hosts.DedupEntriesKeepLast(entries)
-	lines := make([]string, 0, len(dedup))
-	for _, e := range dedup {
+	lines := make([]string, 0, len(entries))
+	for _, e := range entries {
 		lines = append(lines, fmt.Sprintf("%s %s", e.IP, e.Domain))
 	}
 
@@ -807,11 +807,16 @@ func (a *App) ExportHostsToDialog(profileName string) error {
 		return fmt.Errorf("profile %s not found", profileName)
 	}
 
+	home, _ := os.UserHomeDir()
+	desktopDir := filepath.Join(home, "Desktop")
+
 	savePath, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-		Title:           "Export hosts",
-		DefaultFilename: profileName + ".hosts",
+		Title:            "Export hosts",
+		DefaultDirectory: desktopDir,
+		DefaultFilename:  profileName + ".txt",
 		Filters: []runtime.FileFilter{
-			{DisplayName: "Hosts/TXT", Pattern: "*.hosts;*.txt"},
+			{DisplayName: "Text Files (*.txt)", Pattern: "*.txt"},
+			{DisplayName: "All files", Pattern: "*.*"},
 		},
 	})
 	if err != nil {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { GetProfiles, StartProfile, StopProfile, AddProfile, DeleteProfile, ImportHostsFromDialog, ExportHostsToDialog, DedupHosts, GetHostsText, SetHostsText, RenameProfile, IsAdmin, GetProxyAddress, RelaunchAsAdmin } from '../wailsjs/go/main/App'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { GetProfiles, StartProfile, StopProfile, AddProfile, DeleteProfile, ExportHostsToDialog, GetHostsText, SetHostsText, RenameProfile, IsAdmin, GetProxyAddress, RelaunchAsAdmin } from '../wailsjs/go/main/App'
 import { WindowMinimise, WindowToggleMaximise, Quit, EventsOn } from '../wailsjs/runtime/runtime'
 import ProfileCard from './components/ProfileCard.vue'
 import ProfileEditor from './components/ProfileEditor.vue'
@@ -16,7 +16,6 @@ interface Profile {
   hosts_file: string
   running: boolean
   hosts: Record<string, string>
-  duplicate_domains?: Array<{ domain: string; count: number }>
   system_hosts_active?: boolean
   proxy_active?: boolean
   proxy_error?: string
@@ -41,6 +40,7 @@ const searchQuery = ref('')
 const isAdmin = ref(true)
 const showAdminModal = ref(false)
 const showConflictPanel = ref(true)
+const contextMenu = ref({ show: false, x: 0, y: 0, profileName: '' })
 
 const filteredProfiles = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
@@ -185,31 +185,11 @@ async function handleRelaunchAsAdmin() {
   }
 }
 
-async function handleImportHosts(name: string) {
-  try {
-    await ImportHostsFromDialog(name)
-    await loadProfiles()
-    await loadHostsText(name)
-  } catch (e) {
-    console.error('Failed to import hosts:', e)
-  }
-}
-
 async function handleExportHosts(name: string) {
   try {
     await ExportHostsToDialog(name)
   } catch (e) {
     console.error('Failed to export hosts:', e)
-  }
-}
-
-async function handleDedup(name: string) {
-  try {
-    await DedupHosts(name)
-    await loadProfiles()
-    await loadHostsText(name)
-  } catch (e) {
-    console.error('Failed to dedup hosts:', e)
   }
 }
 
@@ -249,12 +229,57 @@ function jumpToProfile(name: string) {
   selectProfile(target)
 }
 
+function onProfileContextMenu(event: MouseEvent, profile: Profile) {
+  event.preventDefault()
+  contextMenu.value = {
+    show: true,
+    x: event.clientX,
+    y: event.clientY,
+    profileName: profile.name,
+  }
+}
+
+function closeContextMenu() {
+  contextMenu.value.show = false
+}
+
+function handleExportFromMenu() {
+  const name = contextMenu.value.profileName
+  closeContextMenu()
+  handleExportHosts(name)
+}
+
+function handleRenameFromMenu() {
+  const name = contextMenu.value.profileName
+  closeContextMenu()
+  openRename(name)
+}
+
+function handleDeleteFromMenu() {
+  const name = contextMenu.value.profileName
+  const profile = profiles.value.find(p => p.name === name)
+  closeContextMenu()
+  if (profile?.system_hosts_active) return
+  if (confirm(`${t('delete')} "${name}"?`)) {
+    handleDelete(name)
+  }
+}
+
+function onDocumentClick() {
+  closeContextMenu()
+}
+
 onMounted(() => {
   loadProfiles()
   IsAdmin().then(v => { isAdmin.value = !!v }).catch(() => { isAdmin.value = false })
   EventsOn('profiles:changed', () => {
     loadProfiles()
   })
+  document.addEventListener('click', onDocumentClick)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocumentClick)
 })
 </script>
 
@@ -374,6 +399,7 @@ onMounted(() => {
             @click="selectProfile(profile)"
             @start="handleStart"
             @stop="handleStop"
+            @contextmenu="onProfileContextMenu($event, profile)"
           />
 
           <div 
@@ -402,15 +428,9 @@ onMounted(() => {
           v-if="selectedProfile"
           :profile="selectedProfile"
           :hosts-text="hostsText"
-          :duplicates="selectedProfile.duplicate_domains || []"
           @save-text="handleSaveText"
-          @delete="handleDelete"
           @start="handleStart"
           @stop="handleStop"
-          @import-hosts="handleImportHosts"
-          @export-hosts="handleExportHosts"
-          @dedup="handleDedup"
-          @rename="openRename"
           @reload-hosts="handleReloadHosts"
         />
 
@@ -445,6 +465,7 @@ onMounted(() => {
       @rename="handleRename"
     />
 
+    <!-- Admin Modal -->
     <Teleport to="body">
       <div
         v-if="showAdminModal"
@@ -465,6 +486,50 @@ onMounted(() => {
           </div>
         </div>
       </div>
+    </Teleport>
+
+    <!-- Context Menu -->
+    <Teleport to="body">
+      <template v-if="contextMenu.show">
+        <div class="fixed inset-0 z-[50]" @click="closeContextMenu" @contextmenu.prevent="closeContextMenu" />
+        <div
+          class="fixed z-[51] rounded-xl border border-slate-600/60 bg-slate-800/95 backdrop-blur-md shadow-2xl py-1.5 min-w-[160px]"
+          :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+        >
+          <button
+            class="w-full text-left px-4 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors flex items-center gap-2.5"
+            @click="handleExportFromMenu"
+          >
+            <svg class="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            {{ t('export') }}
+          </button>
+          <button
+            class="w-full text-left px-4 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors flex items-center gap-2.5"
+            @click="handleRenameFromMenu"
+          >
+            <svg class="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            {{ t('rename') }}
+          </button>
+          <div class="border-t border-white/10 my-1" />
+          <button
+            class="w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2.5"
+            :class="profiles.find(p => p.name === contextMenu.profileName)?.system_hosts_active
+              ? 'text-white/30 cursor-not-allowed'
+              : 'text-red-400 hover:bg-red-500/10'"
+            :disabled="!!profiles.find(p => p.name === contextMenu.profileName)?.system_hosts_active"
+            @click="handleDeleteFromMenu"
+          >
+            <svg class="w-4 h-4" :class="profiles.find(p => p.name === contextMenu.profileName)?.system_hosts_active ? 'text-white/20' : 'text-red-400/50'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            {{ t('delete') }}
+          </button>
+        </div>
+      </template>
     </Teleport>
   </div>
 </template>
