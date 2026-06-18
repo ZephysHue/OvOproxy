@@ -202,10 +202,12 @@ function selectProfile(profile: Profile) {
 
 function onProfileContextMenu(event: MouseEvent, profile: Profile) {
   event.preventDefault()
+  const menuW = 170; const menuH = 160
+  const x = event.clientX + menuW > window.innerWidth ? event.clientX - menuW : event.clientX
+  const y = event.clientY + menuH > window.innerHeight ? event.clientY - menuH : event.clientY
   contextMenu.value = {
     show: true,
-    x: event.clientX,
-    y: event.clientY,
+    x, y,
     profileName: profile.name,
   }
 }
