@@ -13,6 +13,10 @@ interface Profile {
   system_hosts_active?: boolean
   proxy_active?: boolean
   proxy_error?: string
+  subscription_url?: string
+  subscription_interval?: number
+  subscription_enabled?: boolean
+  subscription_last_fetch?: string
 }
 
 const props = defineProps<{
@@ -389,7 +393,7 @@ function onEditorScroll() {
             @blur="saveSubscription"
           />
           <div class="flex items-center gap-2">
-            <span class="text-xs text-white/50">{{ t('subscriptionInterval') || '刷新间隔' }}</span>
+            <span class="text-xs text-white/50">{{ t('refreshIntervalSeconds') }}</span>
             <input
               v-model.number="subInterval"
               type="number"
