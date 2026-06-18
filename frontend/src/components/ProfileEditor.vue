@@ -30,90 +30,21 @@ const emit = defineEmits<{
 const editedText = ref('')
 const hasChanges = ref(false)
 const copiedMsg = ref(false)
-const hostsWarnings = ref<string[]>([])
-const showRiskConfirm = ref(false)
-const riskPreview = ref<string[]>([])
 
 const proxyAddress = computed(() => `${props.profile.listen_ip}:${props.profile.port}`)
 
 watch(() => props.hostsText, (v) => {
   editedText.value = v || ''
   hasChanges.value = false
-  validateHosts(v || '')
 }, { immediate: true })
 
-function validateHosts(text: string) {
-  const warnings: string[] = []
-  const lines = text.split('\n')
-  let invalidIP = false
-  let invalidDomain = false
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-    const parts = trimmed.split(/\s+/)
-    if (parts.length >= 2) {
-      const domain = parts[1]
-      if (domain.includes(':')) {
-        warnings.push(t('hostsWarningPort'))
-        break
-      }
-    }
-    if (parts.length >= 1) {
-      const ip = parts[0]
-      if (ip === '127.0.0.1' || ip === '0.0.0.0') {
-        warnings.push(t('hostsWarningLoopback'))
-        break
-      }
-      if (!isValidIP(ip)) {
-        invalidIP = true
-      }
-    }
-    if (parts.length >= 2) {
-      const domain = parts[1]
-      if (!isValidDomain(domain)) {
-        invalidDomain = true
-      }
-    }
-  }
-  if (invalidIP) warnings.push(t('hostsWarningInvalidIP'))
-  if (invalidDomain) warnings.push(t('hostsWarningInvalidDomain'))
-  hostsWarnings.value = warnings
-}
-
-function getRiskLines(text: string): string[] {
-  const risky: string[] = []
-  for (const raw of text.split('\n')) {
-    const trimmed = raw.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-    const parts = trimmed.split(/\s+/)
-    if (parts.length < 2) continue
-    if (parts[0] === '127.0.0.1' || parts[0] === '0.0.0.0') {
-      risky.push(trimmed)
-    }
-  }
-  return risky
-}
-
 function saveChanges() {
-  const risky = getRiskLines(editedText.value)
-  if (risky.length > 0) {
-    riskPreview.value = risky.slice(0, 8)
-    showRiskConfirm.value = true
-    return
-  }
   emit('saveText', props.profile.name, editedText.value, true)
   hasChanges.value = false
 }
 
 function onEdit() {
   hasChanges.value = true
-  validateHosts(editedText.value)
-}
-
-function saveWithRiskConfirmed() {
-  emit('saveText', props.profile.name, editedText.value, true)
-  hasChanges.value = false
-  showRiskConfirm.value = false
 }
 
 async function copyProxyAddr() {
@@ -377,11 +308,6 @@ function onEditorScroll() {
 
     <!-- Hosts Editor -->
     <div class="flex-1 p-5 flex flex-col">
-      <div v-if="hostsWarnings.length > 0" class="mb-4 p-3 rounded-xl bg-orange-500/15 border border-orange-500/30">
-        <div v-for="warn in hostsWarnings" :key="warn" class="text-orange-200 text-sm">
-          {{ warn }}
-        </div>
-      </div>
 
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-white/80 font-medium">{{ t('hostMappings') }}</h3>
@@ -467,29 +393,5 @@ function onEditorScroll() {
         />
       </div>
     </div>
-
-    <!-- Risk Confirm Modal -->
-    <Teleport to="body">
-      <div
-        v-if="showRiskConfirm"
-        class="fixed inset-0 z-[70] flex items-center justify-center p-4"
-      >
-        <div class="absolute inset-0 bg-black/60" @click="showRiskConfirm = false" />
-        <div class="relative glass-card w-full max-w-xl p-6">
-          <h3 class="text-lg font-semibold text-white/90 mb-3">{{ t('highRiskConfirmTitle') }}</h3>
-          <p class="text-sm text-amber-200 mb-3">{{ t('highRiskConfirmDesc') }}</p>
-          <div class="rounded border border-amber-500/30 bg-amber-500/10 p-2 max-h-44 overflow-y-auto">
-            <div v-for="line in riskPreview" :key="line" class="text-xs font-mono text-amber-100 py-0.5">{{ line }}</div>
-            <div v-if="riskPreview.length === 0" class="text-xs text-amber-200/70">{{ t('noHostMappings') }}</div>
-          </div>
-          <div class="mt-4 flex justify-end gap-2">
-            <button class="glass-button text-white/70" @click="showRiskConfirm = false">{{ t('cancel') }}</button>
-            <button class="glass-button text-amber-200 border-amber-400/30" @click="saveWithRiskConfirmed">
-              {{ t('continueSave') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>

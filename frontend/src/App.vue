@@ -21,14 +21,6 @@ interface Profile {
   proxy_error?: string
 }
 
-interface ActiveConflict {
-  domain: string
-  profiles: string[]
-  ips: string[]
-  count: number
-  isRealConflict: boolean
-}
-
 const profiles = ref<Profile[]>([])
 const selectedProfile = ref<Profile | null>(null)
 const showAddModal = ref(false)
@@ -40,7 +32,6 @@ const hostsText = ref('')
 const searchQuery = ref('')
 const isAdmin = ref(true)
 const showAdminModal = ref(false)
-const showConflictPanel = ref(true)
 const contextMenu = ref({ show: false, x: 0, y: 0, profileName: '' })
 
 const filteredProfiles = computed(() => {
@@ -60,40 +51,6 @@ const filteredProfiles = computed(() => {
 })
 
 const usedPorts = computed(() => profiles.value.map(p => p.port))
-
-const activeConflicts = computed<ActiveConflict[]>(() => {
-  const domainMap = new Map<string, { profiles: Set<string>; ips: Set<string> }>()
-  for (const p of profiles.value) {
-    if (!p.system_hosts_active) continue
-    for (const [domainRaw, ipRaw] of Object.entries(p.hosts || {})) {
-      const domain = String(domainRaw || '').trim().toLowerCase()
-      const ip = String(ipRaw || '').trim()
-      if (!domain || !ip) continue
-      if (!domainMap.has(domain)) {
-        domainMap.set(domain, { profiles: new Set<string>(), ips: new Set<string>() })
-      }
-      const node = domainMap.get(domain)!
-      node.profiles.add(p.name)
-      node.ips.add(ip)
-    }
-  }
-  const out: ActiveConflict[] = []
-  for (const [domain, node] of domainMap.entries()) {
-    if (node.profiles.size <= 1) continue
-    out.push({
-      domain,
-      profiles: Array.from(node.profiles).sort(),
-      ips: Array.from(node.ips).sort(),
-      count: node.profiles.size,
-      isRealConflict: node.ips.size > 1,
-    })
-  }
-  out.sort((a, b) => a.domain.localeCompare(b.domain))
-  return out
-})
-
-const realConflicts = computed(() => activeConflicts.value.filter(c => c.isRealConflict))
-const sameIpWarnings = computed(() => activeConflicts.value.filter(c => !c.isRealConflict))
 
 async function loadProfiles() {
   try {
@@ -228,12 +185,6 @@ function selectProfile(profile: Profile) {
   loadHostsText(profile.name)
 }
 
-function jumpToProfile(name: string) {
-  const target = profiles.value.find((p) => p.name === name)
-  if (!target) return
-  selectProfile(target)
-}
-
 function onProfileContextMenu(event: MouseEvent, profile: Profile) {
   event.preventDefault()
   contextMenu.value = {
@@ -327,8 +278,8 @@ onUnmounted(() => {
 
     <!-- Main Content -->
     <div class="flex-1 flex gap-6 p-6 overflow-hidden">
-      <!-- Conflict Warning Banner -->
-      <div v-if="activeConflicts.length > 0 || !isAdmin" class="w-80 flex-shrink-0 space-y-2">
+      <!-- Left Panel: Profile List -->
+      <div class="w-80 flex flex-col gap-4">
         <!-- Admin Warning -->
         <div
           v-if="!isAdmin"
@@ -336,37 +287,6 @@ onUnmounted(() => {
         >
           {{ t('adminRequiredBanner') }} · {{ t('adminRequiredAction') }}
         </div>
-        <!-- Real Conflicts (different IPs) -->
-        <div
-          v-if="realConflicts.length > 0"
-          class="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2.5 text-red-200 text-sm"
-        >
-          <div class="flex items-center justify-between gap-2">
-            <div class="font-medium text-xs">
-              {{ t('conflictDiffCount', { count: realConflicts.length }) }}
-            </div>
-            <button class="glass-button text-[11px] px-2 py-0.5" @click="showConflictPanel = !showConflictPanel">
-              {{ showConflictPanel ? '收起' : '展开' }}
-            </button>
-          </div>
-          <div v-if="showConflictPanel" class="mt-1.5 max-h-36 overflow-y-auto scrollbar-thin space-y-1">
-            <div v-for="c in realConflicts" :key="c.domain" class="text-xs">
-              <span class="font-mono text-red-300">{{ c.domain }}</span>
-              <span class="text-red-100/70"> · {{ c.ips.join(' / ') }}</span>
-            </div>
-          </div>
-        </div>
-        <!-- Same-IP Warnings (informational, not errors) -->
-        <div
-          v-if="sameIpWarnings.length > 0"
-          class="rounded-xl border border-amber-500/30 bg-amber-500/8 px-3 py-2 text-amber-200/90 text-xs"
-        >
-          <span>{{ t('conflictSameCount', { count: sameIpWarnings.length }) }}</span>
-        </div>
-      </div>
-
-      <!-- Left Panel: Profile List -->
-      <div class="w-80 flex flex-col gap-4">
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold text-white/90">{{ t('profiles') }}</h2>
           <button 
