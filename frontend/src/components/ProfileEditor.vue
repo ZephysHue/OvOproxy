@@ -284,13 +284,13 @@ function onEditorScroll() {
               {{ profile.name }}
               <span 
                 v-if="profile.system_hosts_active" 
-                class="text-xs px-2 py-0.5 rounded bg-blue-500/30 text-blue-300"
+                class="text-xs px-2 py-0.5 rounded bg-blue-500/12 text-blue-700"
               >
                 {{ t('hostsEnabled') }}
               </span>
               <span 
                 v-if="profile.type === 'remote'" 
-                class="text-xs px-2 py-0.5 rounded bg-purple-500/30 text-purple-300"
+                class="text-xs px-2 py-0.5 rounded bg-orange-500/12 text-orange-700"
               >
                 订阅
               </span>
@@ -300,13 +300,13 @@ function onEditorScroll() {
               <span 
                 class="px-2 py-0.5 rounded-full text-xs"
                 :class="profile.proxy_active 
-                  ? 'bg-emerald-500/20 text-emerald-300' 
-                  : 'bg-red-500/20 text-red-300'"
+                  ? 'bg-emerald-500/15 text-emerald-700' 
+                  : 'bg-red-500/15 text-red-600'"
               >
                 {{ profile.proxy_active ? t('proxyActive') : t('proxyError') }}
               </span>
             </p>
-            <p v-if="profile.proxy_error" class="text-xs text-red-400 mt-1">
+            <p v-if="profile.proxy_error" class="text-xs text-red-500 mt-1">
               {{ profile.proxy_error }}
             </p>
           </div>
@@ -314,7 +314,7 @@ function onEditorScroll() {
 
         <div class="flex items-center gap-2">
           <button
-            class="glass-button text-cyan-300 hover:bg-cyan-500/20 border-cyan-500/30"
+            class="glass-button text-blue-600 hover:bg-blue-500/10 border-blue-400/30"
             @click="copyProxyAddr"
             :title="t('copyProxyAddr')"
           >
@@ -323,8 +323,8 @@ function onEditorScroll() {
           <button
             class="glass-button"
             :class="profile.system_hosts_active 
-              ? 'text-red-300 hover:bg-red-500/20'
-              : 'text-emerald-300 hover:bg-emerald-500/20'"
+              ? 'text-red-600 hover:bg-red-500/12'
+              : 'text-emerald-700 hover:bg-emerald-500/12'"
             :disabled="!profile.proxy_active && !profile.system_hosts_active"
             :title="!profile.proxy_active && !profile.system_hosts_active ? t('proxyNotActive') : ''"
             @click="profile.system_hosts_active ? emit('stop', profile.name) : emit('start', profile.name)"
@@ -333,7 +333,7 @@ function onEditorScroll() {
           </button>
           <button
             v-if="hasChanges && profile.type !== 'remote'"
-            class="glass-button bg-blue-500/30 text-blue-200 hover:bg-blue-500/40 border-blue-400/30"
+            class="glass-button bg-blue-500/15 text-blue-700 hover:bg-blue-500/25 border-blue-400/30"
             @click="saveChanges"
           >
             {{ t('saveChanges') }}
@@ -353,7 +353,7 @@ function onEditorScroll() {
       <BackupPanel v-if="profile.type !== 'remote'" :profile-name="profile.name" @changed="emit('reloadHosts', profile.name)" />
 
       <!-- Subscription Panel -->
-      <div class="rounded-xl border border-neutral-200 bg-white/75 p-3 mb-3" :class="profile.type === 'remote' ? 'border-purple-500/30' : ''">
+      <div class="rounded-xl border border-neutral-200 bg-white/75 p-3 mb-3" :class="profile.type === 'remote' ? 'border-orange-500/30' : ''">
         <div class="flex items-center justify-between cursor-pointer" @click="showSubPanel = !showSubPanel">
           <div class="text-xs text-neutral-700 flex items-center gap-2">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -384,7 +384,7 @@ function onEditorScroll() {
               <option v-for="opt in SUBSCRIPTION_INTERVAL_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
             </select>
             <button
-              class="glass-button text-[11px] px-2 py-1 text-cyan-300"
+              class="glass-button text-[11px] px-2 py-1 text-blue-600"
               :disabled="!subUrl || subRefreshing"
               @click="refreshSubscription"
             >

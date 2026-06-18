@@ -46,6 +46,24 @@ export namespace main {
 	        this.proxy_error = source["proxy_error"];
 	    }
 	}
+	export class SubscriptionResult {
+	    status: string;
+	    message: string;
+	    last_fetch: string;
+	    entry_count: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new SubscriptionResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.status = source["status"];
+	        this.message = source["message"];
+	        this.last_fetch = source["last_fetch"];
+	        this.entry_count = source["entry_count"];
+	    }
+	}
 
 }
 

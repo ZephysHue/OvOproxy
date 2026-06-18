@@ -292,14 +292,14 @@ onUnmounted(() => {
         <!-- Admin Warning -->
         <div
           v-if="!isAdmin"
-          class="rounded-xl border border-amber-500/40 bg-amber-500/12 px-3 py-2 text-amber-200 text-xs"
+          class="rounded-xl border border-orange-500/40 bg-orange-500/12 px-3 py-2 text-orange-700 text-xs"
         >
           {{ t('adminRequiredBanner') }} · {{ t('adminRequiredAction') }}
         </div>
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold text-neutral-900">{{ t('profiles') }}</h2>
           <button 
-            class="glass-button text-sm text-blue-300 hover:text-blue-200"
+            class="glass-button text-sm text-blue-600 hover:text-blue-700"
             @click="showAddModal = true"
           >
             <span class="flex items-center gap-1">
@@ -409,10 +409,10 @@ onUnmounted(() => {
         <div class="absolute inset-0 bg-black/25" @click="showAdminModal = false" />
         <div class="relative glass-card w-full max-w-md p-6">
           <h3 class="text-lg font-semibold text-neutral-900 mb-3">{{ t('adminRequiredTitle') }}</h3>
-          <p class="text-sm text-amber-200 mb-2">{{ t('adminRequiredBanner') }}</p>
+          <p class="text-sm text-orange-600 mb-2">{{ t('adminRequiredBanner') }}</p>
           <p class="text-sm text-neutral-700 mb-5">{{ t('adminRequiredAction') }}</p>
           <div class="flex justify-end gap-2">
-            <button class="glass-button text-amber-200 border-amber-400/30" @click="handleRelaunchAsAdmin">
+            <button class="glass-button text-orange-600 border-orange-400/40" @click="handleRelaunchAsAdmin">
               {{ t('relaunchAsAdmin') }}
             </button>
             <button class="glass-button text-neutral-800" @click="showAdminModal = false">

@@ -84,9 +84,9 @@ watch(() => props.profileName, refreshBackups, { immediate: true })
       <button class="glass-button text-xs" @click="refreshBackups" :disabled="loading">刷新</button>
     </div>
     <div class="flex gap-2 mb-3">
-      <button class="glass-button text-xs text-blue-200" @click="createBackup">创建快照</button>
-      <button class="glass-button text-xs text-amber-200" @click="resetTemplate">恢复模板</button>
-      <button class="glass-button text-xs text-red-200" @click="clearHosts">清空</button>
+      <button class="glass-button text-xs text-blue-600" @click="createBackup">创建快照</button>
+      <button class="glass-button text-xs text-orange-600" @click="resetTemplate">恢复模板</button>
+      <button class="glass-button text-xs text-red-600" @click="clearHosts">清空</button>
     </div>
     <div class="max-h-28 overflow-y-auto text-xs text-neutral-700 space-y-1">
       <div v-if="backups.length === 0" class="text-neutral-400">暂无备份</div>

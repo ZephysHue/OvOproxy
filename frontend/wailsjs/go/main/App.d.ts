@@ -39,3 +39,11 @@ export function StartProfile(arg1:string):Promise<void>;
 export function StopAllProfiles():Promise<void>;
 
 export function StopProfile(arg1:string):Promise<void>;
+
+export function AddRemoteProfile(arg1:string,arg2:string,arg3:number,arg4:string,arg5:number):Promise<void>;
+
+export function RefreshSubscription(arg1:string):Promise<main.SubscriptionResult>;
+
+export function RemoveSubscription(arg1:string):Promise<void>;
+
+export function SetSubscription(arg1:string,arg2:string,arg3:number):Promise<void>;

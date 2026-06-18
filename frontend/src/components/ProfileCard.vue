@@ -43,7 +43,7 @@ function handleToggle(e: Event) {
             {{ profile.name }}
             <span 
               v-if="profile.system_hosts_active" 
-              class="text-xs px-1.5 py-0.5 rounded bg-blue-500/30 text-blue-300"
+              class="text-xs px-1.5 py-0.5 rounded bg-blue-500/12 text-blue-700"
             >
               Hosts
             </span>
@@ -51,7 +51,7 @@ function handleToggle(e: Event) {
           <p class="text-sm text-neutral-500 mt-0.5">
             {{ profile.listen_ip }}:{{ profile.port }}
           </p>
-          <p v-if="profile.proxy_error" class="text-xs text-red-400 mt-0.5">
+          <p v-if="profile.proxy_error" class="text-xs text-red-500 mt-0.5">
             {{ profile.proxy_error }}
           </p>
         </div>
@@ -60,8 +60,8 @@ function handleToggle(e: Event) {
       <button
         class="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200"
         :class="profile.system_hosts_active 
-          ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30 border border-red-500/30'
-          : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30'"
+          ? 'bg-red-500/12 text-red-600 hover:bg-red-500/20 border border-red-500/25'
+          : 'bg-emerald-500/12 text-emerald-700 hover:bg-emerald-500/20 border border-emerald-500/25'"
         :disabled="!profile.proxy_active && !profile.system_hosts_active"
         :title="!profile.proxy_active && !profile.system_hosts_active ? t('proxyNotActive') : ''"
         @click="handleToggle"

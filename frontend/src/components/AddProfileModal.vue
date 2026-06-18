@@ -76,10 +76,10 @@ function handleSubmit() {
               <label class="block text-sm text-neutral-500 mb-2">类型</label>
               <div class="flex gap-2">
                 <button type="button" class="flex-1 py-2 rounded-lg text-sm transition-all"
-                  :class="profileType === 'local' ? 'bg-blue-500/30 text-blue-200 border border-blue-400/30' : 'bg-white/5 text-neutral-400 border border-neutral-200'"
+                  :class="profileType === 'local' ? 'bg-blue-500/15 text-blue-700 border border-blue-400/30' : 'bg-black/5 text-neutral-500 border border-neutral-200'"
                   @click="profileType = 'local'">本地 Hosts</button>
                 <button type="button" class="flex-1 py-2 rounded-lg text-sm transition-all"
-                  :class="profileType === 'remote' ? 'bg-purple-500/30 text-purple-200 border border-purple-400/30' : 'bg-white/5 text-neutral-400 border border-neutral-200'"
+                  :class="profileType === 'remote' ? 'bg-orange-500/15 text-orange-700 border border-orange-400/30' : 'bg-black/5 text-neutral-500 border border-neutral-200'"
                   @click="profileType = 'remote'">订阅远程</button>
               </div>
             </div>
@@ -118,7 +118,7 @@ function handleSubmit() {
 
             <div class="flex justify-end gap-3 pt-4">
               <button type="button" class="glass-button text-neutral-500" @click="emit('close')">{{ t('cancel') }}</button>
-              <button type="submit" class="glass-button bg-blue-500/30 text-blue-200 hover:bg-blue-500/40 border-blue-400/30">
+              <button type="submit" class="glass-button bg-blue-500/15 text-blue-700 hover:bg-blue-500/25 border-blue-400/30">
                 {{ t('createProfile') }}
               </button>
             </div>

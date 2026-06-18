@@ -62,7 +62,7 @@ function submit() {
               <button type="button" class="glass-button text-neutral-800" @click="emit('close')">
                 {{ t('cancel') }}
               </button>
-              <button type="submit" class="glass-button bg-blue-500/30 text-blue-200 hover:bg-blue-500/40 border-blue-400/30">
+              <button type="submit" class="glass-button bg-blue-500/15 text-blue-700 hover:bg-blue-500/25 border-blue-400/30">
                 {{ t('save') }}
               </button>
             </div>

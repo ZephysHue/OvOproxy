@@ -77,3 +77,19 @@ export function StopAllProfiles() {
 export function StopProfile(arg1) {
   return window['go']['main']['App']['StopProfile'](arg1);
 }
+
+export function AddRemoteProfile(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['main']['App']['AddRemoteProfile'](arg1, arg2, arg3, arg4, arg5);
+}
+
+export function RefreshSubscription(arg1) {
+  return window['go']['main']['App']['RefreshSubscription'](arg1);
+}
+
+export function RemoveSubscription(arg1) {
+  return window['go']['main']['App']['RemoveSubscription'](arg1);
+}
+
+export function SetSubscription(arg1, arg2, arg3) {
+  return window['go']['main']['App']['SetSubscription'](arg1, arg2, arg3);
+}

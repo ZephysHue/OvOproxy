@@ -20,6 +20,15 @@ const (
 	endMarkerPrefix   = "# <<< Zephy Profile:"
 )
 
+// flushDNSCache 隐藏控制台窗口执行 ipconfig /flushdns。
+// Wails GUI 进程无 console，直接启动控制台子进程会闪现黑窗，
+// 需用 HideWindow + CREATE_NO_WINDOW(0x08000000) 抑制窗口创建。
+func flushDNSCache() {
+	cmd := exec.Command("ipconfig", "/flushdns")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x08000000}
+	_ = cmd.Run()
+}
+
 func profileStartMarker(profileId string) string {
 	return startMarkerPrefix + profileId
 }
@@ -88,7 +97,7 @@ func RemoveAllZephyBlocks(flushDNS bool) error {
 	}
 
 	if flushDNS {
-		_ = exec.Command("ipconfig", "/flushdns").Run()
+		flushDNSCache()
 	}
 	return nil
 }
@@ -172,7 +181,7 @@ func updateProfileBlock(profileId string, lines []string, flushDNS bool) error {
 	}
 
 	if flushDNS {
-		_ = exec.Command("ipconfig", "/flushdns").Run()
+		flushDNSCache()
 	}
 	return nil
 }
