@@ -713,7 +713,7 @@ func (a *App) ResetHostsTemplate(profileName string) error {
 
 // --- Subscription methods ---
 
-const subStartMarker = "# >>> subscription"
+const subStartMarker = "# >>> subscription (auto-managed, do not edit)"
 const subEndMarker = "# <<< subscription"
 
 func (a *App) SetSubscription(name, url string, interval int) error {
@@ -811,35 +811,48 @@ func (a *App) RefreshSubscription(name string) (SubscriptionResult, error) {
 		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("解析失败: %v", err), LastFetch: now}, nil
 	}
 
-	// 构建远程条目块
-	var subLines []string
-	subLines = append(subLines, subStartMarker+" "+url)
-	for _, e := range entries {
-		subLines = append(subLines, fmt.Sprintf("%s %s", e.IP, e.Domain))
+	// 构建新条目行
+	newLines := make([]string, len(entries))
+	for i, e := range entries {
+		newLines[i] = fmt.Sprintf("%s %s", e.IP, e.Domain)
 	}
-	subLines = append(subLines, subEndMarker)
-	subBlock := strings.Join(subLines, "\n") + "\n"
+	newBody := strings.Join(newLines, "\n")
 
-	// 读取现有 hosts 文件，替换或追加订阅块
+	// 读取现有 hosts，提取旧订阅条目行用于比对
 	existing, err := os.ReadFile(hostsFile)
 	if err != nil && !os.IsNotExist(err) {
 		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("读取本地文件失败: %v", err)}, nil
 	}
 	existingStr := string(existing)
 
-	// 移除旧订阅块（兼容旧标记）
-	startIdx := strings.Index(existingStr, subStartMarker)
+	// 查找并提取旧订阅块中的条目行
+	oldBody := extractSubBody(existingStr)
+
+	// 内容无变化则跳过写盘
+	if oldBody == newBody {
+		now := time.Now().Format(time.RFC3339)
+		a.updateLastFetch(name, now)
+		return SubscriptionResult{Status: "ok", Message: "无变化", LastFetch: now, EntryCount: len(entries)}, nil
+	}
+
+	// 构建新订阅块
+	var subLines []string
+	subLines = append(subLines, subStartMarker+" "+url)
+	subLines = append(subLines, newLines...)
+	subLines = append(subLines, subEndMarker)
+	subBlock := strings.Join(subLines, "\n") + "\n"
+
+	// 移除旧订阅块
+	startIdx := subBlockStart(existingStr)
 	if startIdx >= 0 {
 		endIdx := strings.Index(existingStr[startIdx:], subEndMarker)
 		if endIdx >= 0 {
 			endIdx += startIdx + len(subEndMarker)
-			// 吃掉后面的换行
 			if endIdx < len(existingStr) && existingStr[endIdx] == '\n' {
 				endIdx++
 			}
 			existingStr = existingStr[:startIdx] + existingStr[endIdx:]
 		} else {
-			// 有头没尾，整段删到文件末尾
 			existingStr = existingStr[:startIdx]
 		}
 	}
@@ -878,6 +891,34 @@ func (a *App) RefreshSubscription(name string) (SubscriptionResult, error) {
 		LastFetch:  now,
 		EntryCount: len(entries),
 	}, nil
+}
+
+// 提取 hosts 文件中订阅块的条目内容（去掉标记行），用于比对
+func extractSubBody(text string) string {
+	idx := subBlockStart(text)
+	if idx < 0 {
+		return ""
+	}
+	start := strings.Index(text[idx:], "\n")
+	if start < 0 {
+		return ""
+	}
+	start += idx + 1
+	end := strings.Index(text[start:], subEndMarker)
+	if end < 0 {
+		return ""
+	}
+	return strings.TrimSpace(text[start : start+end])
+}
+
+// 查找订阅块起始位置，兼容新旧标记
+func subBlockStart(text string) int {
+	for _, marker := range []string{subStartMarker, "# >>> subscription"} {
+		if idx := strings.Index(text, marker); idx >= 0 {
+			return idx
+		}
+	}
+	return -1
 }
 
 func (a *App) updateLastFetch(name, timestamp string) {

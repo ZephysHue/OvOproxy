@@ -2,6 +2,10 @@
 
 ## 2026-06-18
 
+### 订阅功能优化（参考 SwitchHosts 设计）
+- 刷新时比对条目内容，无变化跳过写盘 + 系统 hosts 重写
+- 标记块加只读提醒 `# >>> subscription (auto-managed, do not edit)`
+
 ### 新增远程 Hosts 订阅功能
 - **config.go**：Profile 新增 `subscription_url`/`subscription_interval`/`subscription_enabled`/`subscription_last_fetch` 字段
 - **app.go**：
