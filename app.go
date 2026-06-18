@@ -29,6 +29,7 @@ type App struct {
 	allowQuit         bool
 	proxyManager      *proxymanager.Manager
 	subscriptionCancel context.CancelFunc
+	refreshMu         sync.Mutex // 串行化 RefreshSubscription
 }
 
 type ProfileState struct {
@@ -362,11 +363,18 @@ func (a *App) StartProfile(name string) error {
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	found := false
 	for i := range a.profiles {
 		if a.profiles[i].Name == name {
 			a.profiles[i].SystemHostsActive = true
 			a.profiles[i].Running = true
+			found = true
+			break
 		}
+	}
+	if !found {
+		// 写入期间 profile 被删除，清理孤儿块
+		_ = winhosts.RemoveProfileBlock(name, true)
 	}
 	return nil
 }
@@ -840,6 +848,9 @@ func (a *App) RefreshSubscription(name string) (SubscriptionResult, error) {
 	}
 	exeDir := a.exeDir
 	a.mu.RUnlock()
+
+	a.refreshMu.Lock()
+	defer a.refreshMu.Unlock()
 
 	if url == "" {
 		return SubscriptionResult{Status: "error", Message: "未设置订阅 URL"}, nil

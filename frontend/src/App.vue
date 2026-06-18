@@ -63,7 +63,12 @@ async function loadProfiles() {
     profiles.value = data || []
     if (selectedProfile.value) {
       const updated = profiles.value.find(p => p.name === selectedProfile.value?.name)
-      if (updated) selectedProfile.value = updated
+      if (updated) {
+        selectedProfile.value = updated
+      } else {
+        selectedProfile.value = null
+        hostsText.value = ''
+      }
     }
   } catch (e) {
     console.error('Failed to load profiles:', e)
@@ -196,7 +201,7 @@ async function handleRename(newName: string) {
 }
 
 function selectProfile(profile: Profile) {
-  selectedProfile.value = profile
+  selectedProfile.value = { ...profile, hosts: { ...profile.hosts } }
   loadHostsText(profile.name)
 }
 
@@ -247,6 +252,9 @@ onMounted(() => {
   IsAdmin().then(v => { isAdmin.value = !!v }).catch(() => { isAdmin.value = false })
   EventsOn('profiles:changed', () => {
     loadProfiles()
+    if (selectedProfile.value) {
+      loadHostsText(selectedProfile.value.name)
+    }
   })
   document.addEventListener('click', onDocumentClick)
 })

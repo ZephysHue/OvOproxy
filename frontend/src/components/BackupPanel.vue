@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { CreateHostsBackup, ListHostsBackups, RestoreHostsBackup, ClearHostsEntries, ResetHostsTemplate } from '../../wailsjs/go/main/App'
 
 interface BackupInfo {
@@ -75,7 +75,6 @@ async function resetTemplate() {
 }
 
 watch(() => props.profileName, refreshBackups, { immediate: true })
-onMounted(refreshBackups)
 </script>
 
 <template>
