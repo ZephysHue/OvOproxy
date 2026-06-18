@@ -19,7 +19,12 @@ const port = ref(8080)
 const error = ref('')
 const profileType = ref<'local' | 'remote'>('local')
 const subUrl = ref('')
-const subInterval = ref(3600)
+const subInterval = ref(86400)
+const subIntervalOptions = [
+  { label: '1 天', value: 86400 },
+  { label: '7 天', value: 604800 },
+  { label: '30 天', value: 2592000 },
+]
 
 function nextAvailablePort(usedPorts: number[]) {
   const used = new Set(usedPorts)
@@ -107,7 +112,9 @@ function handleSubmit() {
               </div>
               <div>
                 <label class="block text-sm text-white/60 mb-2">{{ t('refreshIntervalSeconds') }}</label>
-                <input v-model.number="subInterval" type="number" min="60" step="60" class="glass-input" />
+                <select v-model.number="subInterval" class="glass-input py-2">
+                  <option v-for="opt in subIntervalOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </select>
               </div>
             </template>
 

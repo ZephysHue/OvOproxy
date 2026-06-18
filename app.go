@@ -472,12 +472,15 @@ func (a *App) AddRemoteProfile(name, listenIP string, port int, url string, inte
 		}
 	}
 
+	hostsFile := filepath.Join("configs", "hosts", name+".hosts")
+
 	newProfile := ProfileState{
 		Profile: config.Profile{
 			Type:                 "remote",
 			Name:                 name,
 			ListenIP:             listenIP,
 			Port:                 port,
+			HostsFile:            hostsFile,
 			SubscriptionURL:      url,
 			SubscriptionInterval: interval,
 			SubscriptionEnabled:  true,

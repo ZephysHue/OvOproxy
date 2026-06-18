@@ -66,13 +66,18 @@ async function copyProxyAddr() {
 // Subscription
 const showSubPanel = ref(props.profile.type === 'remote')
 const subUrl = ref('')
-const subInterval = ref(3600)
+const subInterval = ref(86400)
+const subIntervalOptions = [
+  { label: '1 天', value: 86400 },
+  { label: '7 天', value: 604800 },
+  { label: '30 天', value: 2592000 },
+]
 const subRefreshing = ref(false)
 const subResult = ref<{ status: string; message: string; last_fetch: string; entry_count: number } | null>(null)
 
 watch(() => props.profile, (p) => {
   subUrl.value = p.subscription_url || ''
-  subInterval.value = p.subscription_interval || 3600
+  subInterval.value = p.subscription_interval || 86400
   if (p.subscription_last_fetch) {
     subResult.value = { status: 'ok', message: '', last_fetch: p.subscription_last_fetch, entry_count: 0 }
   }
@@ -401,15 +406,13 @@ function onEditorScroll() {
           />
           <div class="flex items-center gap-2">
             <span class="text-xs text-white/50">{{ t('refreshIntervalSeconds') }}</span>
-            <input
+            <select
               v-model.number="subInterval"
-              type="number"
-              min="60"
-              step="60"
-              class="glass-input text-xs w-20 text-center"
+              class="glass-input text-xs py-1.5"
               @change="saveSubscription"
-            />
-            <span class="text-xs text-white/40">秒</span>
+            >
+              <option v-for="opt in subIntervalOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+            </select>
             <button
               class="glass-button text-[11px] px-2 py-1 text-cyan-300"
               :disabled="!subUrl || subRefreshing"
