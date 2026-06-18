@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,12 +22,13 @@ import (
 )
 
 type App struct {
-	ctx          context.Context
-	profiles     []ProfileState
-	mu           sync.RWMutex
-	exeDir       string
-	allowQuit    bool
-	proxyManager *proxymanager.Manager
+	ctx               context.Context
+	profiles          []ProfileState
+	mu                sync.RWMutex
+	exeDir            string
+	allowQuit         bool
+	proxyManager      *proxymanager.Manager
+	subscriptionCancel context.CancelFunc
 }
 
 type ProfileState struct {
@@ -42,6 +45,13 @@ type BackupInfo struct {
 	Path     string `json:"path"`
 	Size     int64  `json:"size"`
 	Modified string `json:"modified"`
+}
+
+type SubscriptionResult struct {
+	Status     string `json:"status"`      // "ok" / "error"
+	Message    string `json:"message"`
+	LastFetch  string `json:"last_fetch"`
+	EntryCount int    `json:"entry_count"`
 }
 
 func NewApp() *App {
@@ -96,6 +106,7 @@ func (a *App) startup(ctx context.Context) {
 			runtime.EventsEmit(a.ctx, "profiles:changed")
 		}
 	}()
+	a.startSubscriptionAutoRefresh()
 }
 
 func (a *App) startAllProxies() {
@@ -154,6 +165,9 @@ func (a *App) beforeClose(ctx context.Context) bool {
 }
 
 func (a *App) shutdown(ctx context.Context) {
+	if a.subscriptionCancel != nil {
+		a.subscriptionCancel()
+	}
 	a.proxyManager.StopAll()
 
 	admin, _ := winhosts.IsAdmin()
@@ -695,6 +709,229 @@ func (a *App) ResetHostsTemplate(profileName string) error {
 # 120.92.124.158 account.wps.cn
 `
 	return a.SetHostsText(profileName, text)
+}
+
+// --- Subscription methods ---
+
+const subStartMarker = "# >>> subscription"
+const subEndMarker = "# <<< subscription"
+
+func (a *App) SetSubscription(name, url string, interval int) error {
+	a.mu.Lock()
+	found := false
+	for i := range a.profiles {
+		if a.profiles[i].Name == name {
+			a.profiles[i].SubscriptionURL = url
+			a.profiles[i].SubscriptionInterval = interval
+			a.profiles[i].SubscriptionEnabled = true
+			found = true
+			break
+		}
+	}
+	if !found {
+		a.mu.Unlock()
+		return fmt.Errorf("profile %s not found", name)
+	}
+	if err := a.saveConfig(); err != nil {
+		a.mu.Unlock()
+		return err
+	}
+	a.mu.Unlock()
+
+	// 立即触发一次刷新
+	_, _ = a.RefreshSubscription(name)
+	return nil
+}
+
+func (a *App) RemoveSubscription(name string) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	for i := range a.profiles {
+		if a.profiles[i].Name == name {
+			a.profiles[i].SubscriptionURL = ""
+			a.profiles[i].SubscriptionInterval = 0
+			a.profiles[i].SubscriptionEnabled = false
+			return a.saveConfig()
+		}
+	}
+	return fmt.Errorf("profile %s not found", name)
+}
+
+func (a *App) RefreshSubscription(name string) (SubscriptionResult, error) {
+	var url string
+	var hostsFile string
+	var isActive bool
+	a.mu.RLock()
+	for i := range a.profiles {
+		if a.profiles[i].Name == name {
+			url = a.profiles[i].SubscriptionURL
+			hostsFile = a.profiles[i].HostsFile
+			isActive = a.profiles[i].SystemHostsActive
+			break
+		}
+	}
+	exeDir := a.exeDir
+	a.mu.RUnlock()
+
+	if url == "" {
+		return SubscriptionResult{Status: "error", Message: "未设置订阅 URL"}, nil
+	}
+	if !filepath.IsAbs(hostsFile) {
+		hostsFile = filepath.Join(exeDir, hostsFile)
+	}
+
+	// 拉取远程内容
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		now := time.Now().Format(time.RFC3339)
+		a.updateLastFetch(name, now)
+		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("请求失败: %v", err), LastFetch: now}, nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		now := time.Now().Format(time.RFC3339)
+		a.updateLastFetch(name, now)
+		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("HTTP %d", resp.StatusCode), LastFetch: now}, nil
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024)) // 10MB limit
+	if err != nil {
+		now := time.Now().Format(time.RFC3339)
+		a.updateLastFetch(name, now)
+		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("读取失败: %v", err), LastFetch: now}, nil
+	}
+
+	entries, _, err := hosts.ParseText(string(body))
+	if err != nil {
+		now := time.Now().Format(time.RFC3339)
+		a.updateLastFetch(name, now)
+		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("解析失败: %v", err), LastFetch: now}, nil
+	}
+
+	// 构建远程条目块
+	var subLines []string
+	subLines = append(subLines, subStartMarker+" "+url)
+	for _, e := range entries {
+		subLines = append(subLines, fmt.Sprintf("%s %s", e.IP, e.Domain))
+	}
+	subLines = append(subLines, subEndMarker)
+	subBlock := strings.Join(subLines, "\n") + "\n"
+
+	// 读取现有 hosts 文件，替换或追加订阅块
+	existing, err := os.ReadFile(hostsFile)
+	if err != nil && !os.IsNotExist(err) {
+		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("读取本地文件失败: %v", err)}, nil
+	}
+	existingStr := string(existing)
+
+	// 移除旧订阅块（兼容旧标记）
+	startIdx := strings.Index(existingStr, subStartMarker)
+	if startIdx >= 0 {
+		endIdx := strings.Index(existingStr[startIdx:], subEndMarker)
+		if endIdx >= 0 {
+			endIdx += startIdx + len(subEndMarker)
+			// 吃掉后面的换行
+			if endIdx < len(existingStr) && existingStr[endIdx] == '\n' {
+				endIdx++
+			}
+			existingStr = existingStr[:startIdx] + existingStr[endIdx:]
+		} else {
+			// 有头没尾，整段删到文件末尾
+			existingStr = existingStr[:startIdx]
+		}
+	}
+
+	// 追加新订阅块
+	existingStr = strings.TrimRight(existingStr, "\n") + "\n\n" + subBlock
+
+	if err := os.MkdirAll(filepath.Dir(hostsFile), 0755); err != nil {
+		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("创建目录失败: %v", err)}, nil
+	}
+	if err := os.WriteFile(hostsFile, []byte(existingStr), 0644); err != nil {
+		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("写入失败: %v", err)}, nil
+	}
+
+	// 更新内存中的 hosts map + 代理规则
+	a.mu.Lock()
+	for i := range a.profiles {
+		if a.profiles[i].Name == name {
+			a.refreshProfileHostsLocked(i)
+			break
+		}
+	}
+	a.mu.Unlock()
+
+	now := time.Now().Format(time.RFC3339)
+	a.updateLastFetch(name, now)
+
+	// 如果已启用，重新写入系统 hosts
+	if isActive {
+		_ = a.StartProfile(name)
+	}
+
+	return SubscriptionResult{
+		Status:     "ok",
+		Message:    "刷新成功",
+		LastFetch:  now,
+		EntryCount: len(entries),
+	}, nil
+}
+
+func (a *App) updateLastFetch(name, timestamp string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for i := range a.profiles {
+		if a.profiles[i].Name == name {
+			a.profiles[i].SubscriptionLastFetch = timestamp
+			_ = a.saveConfig()
+			return
+		}
+	}
+}
+
+func (a *App) startSubscriptionAutoRefresh() {
+	ctx, cancel := context.WithCancel(context.Background())
+	a.subscriptionCancel = cancel
+
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		lastRefresh := make(map[string]time.Time)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				a.mu.RLock()
+				type subInfo struct {
+					name     string
+					interval int
+				}
+				var subs []subInfo
+				for _, p := range a.profiles {
+					if p.SubscriptionEnabled && p.SubscriptionInterval > 0 && p.SubscriptionURL != "" {
+						subs = append(subs, subInfo{name: p.Name, interval: p.SubscriptionInterval})
+					}
+				}
+				a.mu.RUnlock()
+
+				for _, s := range subs {
+					if last, ok := lastRefresh[s.name]; ok {
+						if time.Since(last) < time.Duration(s.interval)*time.Second {
+							continue
+						}
+					}
+					_, _ = a.RefreshSubscription(s.name)
+					lastRefresh[s.name] = time.Now()
+				}
+			}
+		}
+	}()
 }
 
 func (a *App) saveConfig() error {

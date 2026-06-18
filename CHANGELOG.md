@@ -2,12 +2,20 @@
 
 ## 2026-06-18
 
-### 建立推送前自测流程
-- **verify.sh**：14 项自动化检查（Go 交叉编译、TypeScript 类型、embed 路径、文件完整性、旧名称残留）
-- **main.go**：互斥锁名 `ZephyHostsManager_Mutex` → `HostOVOManager_Mutex`
-- 沙箱内无法运行 Wails 编译和 Windows exe 测试是已知限制
+### 新增远程 Hosts 订阅功能
+- **config.go**：Profile 新增 `subscription_url`/`subscription_interval`/`subscription_enabled`/`subscription_last_fetch` 字段
+- **app.go**：
+  - `SetSubscription`：设置订阅 URL 和刷新间隔，立即触发刷新
+  - `RemoveSubscription`：清除订阅配置
+  - `RefreshSubscription`：HTTP GET 拉取远程 hosts → 解析 → 写入文件底部 `# >>> subscription` 标记块 → 若已启用则自动更新系统 hosts
+  - `startSubscriptionAutoRefresh`：30s 轮询定时器，按各 profile 间隔自动刷新
+  - 订阅结果返回 `{status, message, last_fetch, entry_count}`
+- **ProfileEditor.vue**：新增订阅配置面板（URL 输入、刷新按钮、间隔设置、状态显示）
+- 设计原则：每个 profile 一个 URL，远程条目以标记块管理，刷新时替换旧块
 
-### 修复托盘图标 + 永久性图标同步机制
+### 建立推送前自测流程
+- **verify.sh**：14 项自动化检查
+- **main.go**：互斥锁名 → `HostOVOManager_Mutex`
 - **tray.go**：托盘标题 `ZephyHosts` → `HostOVO`，tooltip 同步更新
 - **assets/tray.ico**：QQ 企鹅托盘图标（ImageMagick 生成，可靠格式）
 - **build.bat**：移除不可靠的 PowerShell ICO 转换，托盘图标作为静态资源提交

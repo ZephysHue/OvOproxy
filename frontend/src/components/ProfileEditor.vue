@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { t } from '../i18n'
-import { GetProxyAddress } from '../../wailsjs/go/main/App'
+import { GetProxyAddress, SetSubscription, RemoveSubscription, RefreshSubscription } from '../../wailsjs/go/main/App'
 import BackupPanel from './BackupPanel.vue'
 
 interface Profile {
@@ -56,6 +56,56 @@ async function copyProxyAddr() {
   } catch (e) {
     console.error('Copy failed:', e)
   }
+}
+
+// Subscription
+const showSubPanel = ref(false)
+const subUrl = ref('')
+const subInterval = ref(3600)
+const subRefreshing = ref(false)
+const subResult = ref<{ status: string; message: string; last_fetch: string; entry_count: number } | null>(null)
+
+watch(() => props.profile, (p) => {
+  subUrl.value = p.subscription_url || ''
+  subInterval.value = p.subscription_interval || 3600
+  if (p.subscription_last_fetch) {
+    subResult.value = { status: 'ok', message: '', last_fetch: p.subscription_last_fetch, entry_count: 0 }
+  }
+}, { immediate: true })
+
+async function saveSubscription() {
+  const url = subUrl.value.trim()
+  if (!url) {
+    await RemoveSubscription(props.profile.name)
+    subResult.value = null
+    return
+  }
+  try {
+    await SetSubscription(props.profile.name, url, subInterval.value)
+    emit('reloadHosts', props.profile.name)
+  } catch (e: any) {
+    console.error('SetSubscription:', e)
+  }
+}
+
+async function refreshSubscription() {
+  subRefreshing.value = true
+  try {
+    const result = await RefreshSubscription(props.profile.name)
+    subResult.value = result
+    emit('reloadHosts', props.profile.name)
+  } catch (e: any) {
+    subResult.value = { status: 'error', message: e?.message || String(e), last_fetch: '', entry_count: 0 }
+  }
+  subRefreshing.value = false
+}
+
+function formatLastFetch(ts: string): string {
+  if (!ts) return ''
+  try {
+    const d = new Date(ts)
+    return d.toLocaleString()
+  } catch { return ts }
 }
 
 const showFind = ref(false)
@@ -315,6 +365,59 @@ function onEditorScroll() {
       </div>
 
       <BackupPanel :profile-name="profile.name" @changed="emit('reloadHosts', profile.name)" />
+
+      <!-- Subscription Panel -->
+      <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 mb-3">
+        <div class="flex items-center justify-between cursor-pointer" @click="showSubPanel = !showSubPanel">
+          <div class="text-xs text-white/70 flex items-center gap-2">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            {{ t('subscriptions') }}
+            <span v-if="subUrl" class="text-emerald-400/70">●</span>
+          </div>
+          <svg class="w-3.5 h-3.5 text-white/40 transition-transform" :class="showSubPanel ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </div>
+        <div v-if="showSubPanel" class="mt-2 space-y-2">
+          <input
+            v-model="subUrl"
+            type="url"
+            :placeholder="t('subscriptionUrl')"
+            class="glass-input text-xs w-full"
+            @blur="saveSubscription"
+          />
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-white/50">{{ t('subscriptionInterval') || '刷新间隔' }}</span>
+            <input
+              v-model.number="subInterval"
+              type="number"
+              min="60"
+              step="60"
+              class="glass-input text-xs w-20 text-center"
+              @change="saveSubscription"
+            />
+            <span class="text-xs text-white/40">秒</span>
+            <button
+              class="glass-button text-[11px] px-2 py-1 text-cyan-300"
+              :disabled="!subUrl || subRefreshing"
+              @click="refreshSubscription"
+            >
+              {{ subRefreshing ? '...' : t('manualRefresh') || '刷新' }}
+            </button>
+          </div>
+          <div v-if="subResult" class="text-xs" :class="subResult.status === 'ok' ? 'text-emerald-400' : 'text-red-400'">
+            <template v-if="subResult.status === 'ok'">
+              {{ subResult.last_fetch ? formatLastFetch(subResult.last_fetch) : '' }}
+              新增 {{ subResult.entry_count }} 条
+            </template>
+            <template v-else>
+              {{ subResult.message }}
+            </template>
+          </div>
+        </div>
+      </div>
 
       <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 max-h-32 overflow-y-auto scrollbar-thin mb-3">
         <div class="flex items-center justify-between mb-2 gap-2">

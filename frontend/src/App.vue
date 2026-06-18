@@ -19,6 +19,10 @@ interface Profile {
   system_hosts_active?: boolean
   proxy_active?: boolean
   proxy_error?: string
+  subscription_url?: string
+  subscription_interval?: number
+  subscription_enabled?: boolean
+  subscription_last_fetch?: string
 }
 
 const profiles = ref<Profile[]>([])
