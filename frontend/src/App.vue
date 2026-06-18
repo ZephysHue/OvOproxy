@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { GetProfiles, StartProfile, StopProfile, AddProfile, DeleteProfile, ExportHostsToDialog, GetHostsText, SetHostsText, RenameProfile, IsAdmin, GetProxyAddress, RelaunchAsAdmin } from '../wailsjs/go/main/App'
+import { GetProfiles, StartProfile, StopProfile, AddProfile, AddRemoteProfile, DeleteProfile, ExportHostsToDialog, GetHostsText, SetHostsText, RenameProfile, IsAdmin, GetProxyAddress, RelaunchAsAdmin } from '../wailsjs/go/main/App'
 import { WindowMinimise, WindowToggleMaximise, Quit, EventsOn } from '../wailsjs/runtime/runtime'
 import ProfileCard from './components/ProfileCard.vue'
 import ProfileEditor from './components/ProfileEditor.vue'
@@ -19,6 +19,7 @@ interface Profile {
   system_hosts_active?: boolean
   proxy_active?: boolean
   proxy_error?: string
+  type?: string
   subscription_url?: string
   subscription_interval?: number
   subscription_enabled?: boolean
@@ -117,6 +118,16 @@ async function handleAdd(name: string, ip: string, port: number) {
     showAddModal.value = false
   } catch (e) {
     console.error('Failed to add:', e)
+  }
+}
+
+async function handleAddRemote(name: string, ip: string, port: number, url: string, interval: number) {
+  try {
+    await AddRemoteProfile(name, ip, port, url, interval)
+    await loadProfiles()
+    showAddModal.value = false
+  } catch (e) {
+    console.error('Failed to add remote:', e)
   }
 }
 
@@ -383,6 +394,7 @@ onUnmounted(() => {
       :used-ports="usedPorts"
       @close="showAddModal = false"
       @add="handleAdd"
+      @add-remote="handleAddRemote"
     />
 
     <SettingsModal :show="showSettings" @close="showSettings = false" />

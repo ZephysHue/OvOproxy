@@ -13,6 +13,7 @@ interface Profile {
   system_hosts_active?: boolean
   proxy_active?: boolean
   proxy_error?: string
+  type?: string
   subscription_url?: string
   subscription_interval?: number
   subscription_enabled?: boolean
@@ -63,7 +64,7 @@ async function copyProxyAddr() {
 }
 
 // Subscription
-const showSubPanel = ref(false)
+const showSubPanel = ref(props.profile.type === 'remote')
 const subUrl = ref('')
 const subInterval = ref(3600)
 const subRefreshing = ref(false)
@@ -312,6 +313,12 @@ function onEditorScroll() {
               >
                 {{ t('hostsEnabled') }}
               </span>
+              <span 
+                v-if="profile.type === 'remote'" 
+                class="text-xs px-2 py-0.5 rounded bg-purple-500/30 text-purple-300"
+              >
+                订阅
+              </span>
             </h2>
             <p class="text-sm text-white/50 mt-0.5 flex items-center gap-2">
               {{ profile.listen_ip }}:{{ profile.port }}
@@ -350,7 +357,7 @@ function onEditorScroll() {
             {{ profile.system_hosts_active ? t('disableHosts') : t('enableHosts') }}
           </button>
           <button
-            v-if="hasChanges"
+            v-if="hasChanges && profile.type !== 'remote'"
             class="glass-button bg-blue-500/30 text-blue-200 hover:bg-blue-500/40 border-blue-400/30"
             @click="saveChanges"
           >
@@ -368,10 +375,10 @@ function onEditorScroll() {
         <span class="text-sm text-white/40">{{ profile.hosts_file }}</span>
       </div>
 
-      <BackupPanel :profile-name="profile.name" @changed="emit('reloadHosts', profile.name)" />
+      <BackupPanel v-if="profile.type !== 'remote'" :profile-name="profile.name" @changed="emit('reloadHosts', profile.name)" />
 
       <!-- Subscription Panel -->
-      <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 mb-3">
+      <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 mb-3" :class="profile.type === 'remote' ? 'border-purple-500/30' : ''">
         <div class="flex items-center justify-between cursor-pointer" @click="showSubPanel = !showSubPanel">
           <div class="text-xs text-white/70 flex items-center gap-2">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -423,7 +430,7 @@ function onEditorScroll() {
         </div>
       </div>
 
-      <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 max-h-32 overflow-y-auto scrollbar-thin mb-3">
+      <div v-if="profile.type !== 'remote'" class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 max-h-32 overflow-y-auto scrollbar-thin mb-3">
         <div class="flex items-center justify-between mb-2 gap-2">
           <div class="text-xs text-white/70">{{ t('rulesPanel') }}</div>
           <div class="flex items-center gap-1">
@@ -493,7 +500,9 @@ function onEditorScroll() {
           ref="textareaRef"
           v-model="editedText"
           class="w-full h-full rounded-r-xl rounded-l-none bg-slate-950 border border-slate-700/70 text-white/90 p-4 font-mono text-sm leading-6 outline-none focus:border-blue-400/60 resize-none scrollbar-thin"
+          :class="profile.type === 'remote' ? 'text-white/50 cursor-default' : ''"
           spellcheck="false"
+          :readonly="profile.type === 'remote'"
           @input="onEdit"
           @keydown="handleKeydown"
           @scroll="onEditorScroll"

@@ -7,10 +7,11 @@ import (
 )
 
 type Profile struct {
+	Type                 string `json:"type,omitempty"` // "remote" or "" (local)
 	Name                 string `json:"name"`
 	ListenIP             string `json:"listen_ip"`
 	Port                 int    `json:"port"`
-	HostsFile            string `json:"hosts_file"`
+	HostsFile            string `json:"hosts_file,omitempty"`
 	SubscriptionURL      string `json:"subscription_url,omitempty"`
 	SubscriptionInterval int    `json:"subscription_interval,omitempty"`
 	SubscriptionEnabled  bool   `json:"subscription_enabled,omitempty"`
@@ -47,7 +48,7 @@ func Load(path string) (*File, error) {
 		if p.Port <= 0 || p.Port > 65535 {
 			return nil, fmt.Errorf("profile[%s]: invalid port", p.Name)
 		}
-		if p.HostsFile == "" {
+		if p.Type != "remote" && p.HostsFile == "" {
 			return nil, fmt.Errorf("profile[%s]: hosts_file is required", p.Name)
 		}
 

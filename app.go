@@ -305,22 +305,37 @@ func (a *App) StartProfile(name string) error {
 	var hostsPath string
 	var proxyActive bool
 	var proxyErr string
+	var isRemote bool
 	for i := range a.profiles {
 		if a.profiles[i].Name == name {
 			hostsPath = a.profiles[i].HostsFile
 			proxyActive = a.profiles[i].ProxyActive
 			proxyErr = a.profiles[i].ProxyError
+			isRemote = a.profiles[i].Type == "remote"
 			break
 		}
 	}
 	exeDir := a.exeDir
 	a.mu.RUnlock()
 
-	if hostsPath == "" {
-		return fmt.Errorf("profile %s not found", name)
-	}
 	if !proxyActive {
 		return fmt.Errorf("代理端口未启动: %s", proxyErr)
+	}
+
+	// remote 类型：hosts 文件在首次刷新时创建，这里兜底生成路径
+	if isRemote && hostsPath == "" {
+		hostsPath = filepath.Join(exeDir, "configs", "hosts", name+".hosts")
+		a.mu.Lock()
+		for i := range a.profiles {
+			if a.profiles[i].Name == name {
+				a.profiles[i].HostsFile = filepath.Join("configs", "hosts", name+".hosts")
+				break
+			}
+		}
+		a.mu.Unlock()
+	}
+	if hostsPath == "" {
+		return fmt.Errorf("profile %s not found", name)
 	}
 	if !filepath.IsAbs(hostsPath) {
 		hostsPath = filepath.Join(exeDir, hostsPath)
@@ -440,6 +455,55 @@ func (a *App) AddProfile(name, listenIP string, port int) error {
 	_ = a.proxyManager.StartProxy(nameCopy, listenIPCopy, portCopy, hostsRules)
 	a.refreshProxyStatus()
 	a.mu.Lock()
+
+	return nil
+}
+
+func (a *App) AddRemoteProfile(name, listenIP string, port int, url string, interval int) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	for _, p := range a.profiles {
+		if p.Name == name {
+			return fmt.Errorf("profile %s already exists", name)
+		}
+		if p.ListenIP == listenIP && p.Port == port {
+			return fmt.Errorf("address %s:%d already in use", listenIP, port)
+		}
+	}
+
+	newProfile := ProfileState{
+		Profile: config.Profile{
+			Type:                 "remote",
+			Name:                 name,
+			ListenIP:             listenIP,
+			Port:                 port,
+			SubscriptionURL:      url,
+			SubscriptionInterval: interval,
+			SubscriptionEnabled:  true,
+		},
+		Running: false,
+		Hosts:   make(map[string]string),
+	}
+	a.profiles = append(a.profiles, newProfile)
+
+	if err := a.saveConfig(); err != nil {
+		return err
+	}
+
+	nameCopy := name
+	listenIPCopy := listenIP
+	portCopy := port
+
+	a.mu.Unlock()
+	_ = a.proxyManager.StartProxy(nameCopy, listenIPCopy, portCopy, nil)
+	a.refreshProxyStatus()
+	a.mu.Lock()
+
+	// 立即拉取一次订阅
+	go func() {
+		_, _ = a.RefreshSubscription(nameCopy)
+	}()
 
 	return nil
 }
