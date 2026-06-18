@@ -4,9 +4,16 @@
 
 ### 修复托盘图标 + 永久性图标同步机制
 - **tray.go**：托盘标题 `ZephyHosts` → `HostOVO`，tooltip 同步更新
-- **assets/tray.ico**：从 `appicon.png` 生成 QQ 企鹅托盘图标（32×32）
-- **build.bat**：新增自动托盘图标生成步骤（PowerShell PNG→ICO 转换）
-- **永久性设计**：`appicon.png` 是唯一图标源，build.bat 自动派生 exe 图标 + 托盘图标 + 前端 logo，不再有多处手动维护的图标文件
+- **assets/tray.ico**：QQ 企鹅托盘图标（ImageMagick 生成，可靠格式）
+- **build.bat**：移除不可靠的 PowerShell ICO 转换，托盘图标作为静态资源提交
+
+**图标同步机制**（换图标时三步走）：
+```
+1. 替换 appicon.png（唯一源图）
+2. convert appicon.png -resize 32x32 -colors 256 assets/tray.ico
+3. cp appicon.png frontend/src/assets/images/logo-universal.png
+```
+`appicon.png` → exe 图标（build.bat 自动） | `tray.ico` → 托盘（静态提交） | `logo-universal.png` → 界面内（静态提交）
 
 ### 新增 CHANGELOG.md 更新日志
 - README.md 精简为项目简介，改动记录统一在 CHANGELOG.md
