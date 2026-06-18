@@ -78,9 +78,9 @@ watch(() => props.profileName, refreshBackups, { immediate: true })
 </script>
 
 <template>
-  <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 mb-4">
+  <div class="rounded-xl border border-neutral-200 bg-white/75 p-3 mb-4">
     <div class="flex items-center justify-between mb-3">
-      <div class="text-sm text-white/80">备份与还原</div>
+      <div class="text-sm text-neutral-800">备份与还原</div>
       <button class="glass-button text-xs" @click="refreshBackups" :disabled="loading">刷新</button>
     </div>
     <div class="flex gap-2 mb-3">
@@ -88,12 +88,12 @@ watch(() => props.profileName, refreshBackups, { immediate: true })
       <button class="glass-button text-xs text-amber-200" @click="resetTemplate">恢复模板</button>
       <button class="glass-button text-xs text-red-200" @click="clearHosts">清空</button>
     </div>
-    <div class="max-h-28 overflow-y-auto text-xs text-white/70 space-y-1">
-      <div v-if="backups.length === 0" class="text-white/40">暂无备份</div>
-      <div v-for="b in backups" :key="b.file_name" class="flex items-center justify-between rounded px-2 py-1 bg-slate-800/70">
+    <div class="max-h-28 overflow-y-auto text-xs text-neutral-700 space-y-1">
+      <div v-if="backups.length === 0" class="text-neutral-400">暂无备份</div>
+      <div v-for="b in backups" :key="b.file_name" class="flex items-center justify-between rounded px-2 py-1 bg-white/75/70">
         <div class="truncate mr-2">
           <div class="font-mono">{{ b.file_name }}</div>
-          <div class="text-white/40">{{ b.modified }} · {{ b.size }}B</div>
+          <div class="text-neutral-400">{{ b.modified }} · {{ b.size }}B</div>
         </div>
         <button class="glass-button text-[11px]" @click="restoreBackup(b.file_name)">还原</button>
       </div>

@@ -266,7 +266,7 @@ function onEditorScroll() {
 <template>
   <div class="h-full flex flex-col glass-card overflow-y-auto scrollbar-thin">
     <!-- Header -->
-    <div class="p-5 border-b border-white/10 sticky top-0 z-20 bg-slate-900/95 backdrop-blur-sm">
+    <div class="p-5 border-b border-neutral-200 sticky top-0 z-20 bg-white/70 backdrop-blur-xl backdrop-blur-sm">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <div 
@@ -280,7 +280,7 @@ function onEditorScroll() {
             </svg>
           </div>
           <div>
-            <h2 class="text-xl font-semibold text-white/90 flex items-center gap-2">
+            <h2 class="text-xl font-semibold text-neutral-900 flex items-center gap-2">
               {{ profile.name }}
               <span 
                 v-if="profile.system_hosts_active" 
@@ -295,7 +295,7 @@ function onEditorScroll() {
                 订阅
               </span>
             </h2>
-            <p class="text-sm text-white/50 mt-0.5 flex items-center gap-2">
+            <p class="text-sm text-neutral-500 mt-0.5 flex items-center gap-2">
               {{ profile.listen_ip }}:{{ profile.port }}
               <span 
                 class="px-2 py-0.5 rounded-full text-xs"
@@ -346,23 +346,23 @@ function onEditorScroll() {
     <div class="flex-1 p-5 flex flex-col">
 
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-white/80 font-medium">{{ t('hostMappings') }}</h3>
-        <span class="text-sm text-white/40">{{ profile.hosts_file || '(订阅远程)' }}</span>
+        <h3 class="text-neutral-800 font-medium">{{ t('hostMappings') }}</h3>
+        <span class="text-sm text-neutral-400">{{ profile.hosts_file || '(订阅远程)' }}</span>
       </div>
 
       <BackupPanel v-if="profile.type !== 'remote'" :profile-name="profile.name" @changed="emit('reloadHosts', profile.name)" />
 
       <!-- Subscription Panel -->
-      <div class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 mb-3" :class="profile.type === 'remote' ? 'border-purple-500/30' : ''">
+      <div class="rounded-xl border border-neutral-200 bg-white/75 p-3 mb-3" :class="profile.type === 'remote' ? 'border-purple-500/30' : ''">
         <div class="flex items-center justify-between cursor-pointer" @click="showSubPanel = !showSubPanel">
-          <div class="text-xs text-white/70 flex items-center gap-2">
+          <div class="text-xs text-neutral-700 flex items-center gap-2">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
             </svg>
             {{ t('subscriptions') }}
             <span v-if="subUrl" class="text-emerald-400/70">●</span>
           </div>
-          <svg class="w-3.5 h-3.5 text-white/40 transition-transform" :class="showSubPanel ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-3.5 h-3.5 text-neutral-400 transition-transform" :class="showSubPanel ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
           </svg>
         </div>
@@ -375,7 +375,7 @@ function onEditorScroll() {
             @blur="saveSubscription"
           />
           <div class="flex items-center gap-2">
-            <span class="text-xs text-white/50">{{ t('refreshIntervalSeconds') }}</span>
+            <span class="text-xs text-neutral-500">{{ t('refreshIntervalSeconds') }}</span>
             <select
               v-model.number="subInterval"
               class="glass-input text-xs py-1.5"
@@ -403,9 +403,9 @@ function onEditorScroll() {
         </div>
       </div>
 
-      <div v-if="profile.type !== 'remote'" class="rounded-xl border border-slate-700/60 bg-slate-900 p-3 max-h-32 overflow-y-auto scrollbar-thin mb-3">
+      <div v-if="profile.type !== 'remote'" class="rounded-xl border border-neutral-200 bg-white/75 p-3 max-h-32 overflow-y-auto scrollbar-thin mb-3">
         <div class="flex items-center justify-between mb-2 gap-2">
-          <div class="text-xs text-white/70">{{ t('rulesPanel') }}</div>
+          <div class="text-xs text-neutral-700">{{ t('rulesPanel') }}</div>
           <div class="flex items-center gap-1">
             <button class="glass-button text-[11px] px-2 py-1" @click="toggleAllRules(true)">{{ t('enableAll') }}</button>
             <button class="glass-button text-[11px] px-2 py-1" @click="toggleAllRules(false)">{{ t('disableAll') }}</button>
@@ -417,24 +417,24 @@ function onEditorScroll() {
           :placeholder="t('ruleFilter')"
           class="glass-input text-xs mb-2 py-2"
         />
-        <div v-if="toggleableRules.length === 0" class="text-xs text-white/40">{{ t('noHostMappings') }}</div>
+        <div v-if="toggleableRules.length === 0" class="text-xs text-neutral-400">{{ t('noHostMappings') }}</div>
         <label
           v-for="rule in filteredToggleableRules"
           :key="`${rule.lineNo}-${rule.domain}`"
-          class="flex items-center gap-2 text-xs text-white/80 py-1"
+          class="flex items-center gap-2 text-xs text-neutral-800 py-1"
         >
           <input
             type="checkbox"
             :checked="rule.enabled"
             @change="toggleRule(rule.lineNo, ($event.target as HTMLInputElement).checked)"
           />
-          <span class="text-white/40">{{ t('line') }} {{ rule.lineNo }}</span>
+          <span class="text-neutral-400">{{ t('line') }} {{ rule.lineNo }}</span>
           <span class="truncate">{{ rule.domain }}</span>
         </label>
       </div>
 
       <!-- Find Bar (Ctrl+F) -->
-      <div v-if="showFind" class="mb-3 p-3 rounded-xl bg-slate-800/80 border border-slate-600/50 flex items-center gap-3">
+      <div v-if="showFind" class="mb-3 p-3 rounded-xl bg-white/70 border border-neutral-200 flex items-center gap-3">
         <input
           v-model="findQuery"
           type="text"
@@ -445,19 +445,19 @@ function onEditorScroll() {
           @keydown.shift.enter="findPrev"
           autofocus
         />
-        <span v-if="findMatches.length > 0" class="text-sm text-white/50">
+        <span v-if="findMatches.length > 0" class="text-sm text-neutral-500">
           {{ t('matchCount', { current: currentMatchIndex + 1, total: findMatches.length }) }}
         </span>
-        <span v-else-if="findQuery" class="text-sm text-white/40">
+        <span v-else-if="findQuery" class="text-sm text-neutral-400">
           {{ t('noMatches') }}
         </span>
-        <button class="glass-button text-sm text-white/70" @click="findPrev" :disabled="findMatches.length === 0">
+        <button class="glass-button text-sm text-neutral-700" @click="findPrev" :disabled="findMatches.length === 0">
           {{ t('findPrev') }}
         </button>
-        <button class="glass-button text-sm text-white/70" @click="findNext" :disabled="findMatches.length === 0">
+        <button class="glass-button text-sm text-neutral-700" @click="findNext" :disabled="findMatches.length === 0">
           {{ t('findNext') }}
         </button>
-        <button class="glass-button text-sm text-white/50" @click="showFind = false">
+        <button class="glass-button text-sm text-neutral-500" @click="showFind = false">
           {{ t('close') }}
         </button>
       </div>
@@ -465,15 +465,15 @@ function onEditorScroll() {
       <div class="relative flex-1 flex min-h-[320px]">
         <div
           ref="lineNumberRef"
-          class="w-12 rounded-l-xl border border-r-0 border-slate-700/70 bg-slate-900 text-right pr-2 pt-4 text-xs font-mono text-white/40 overflow-hidden"
+          class="w-12 rounded-l-xl border border-r-0 border-neutral-200 bg-white/75 text-right pr-2 pt-4 text-xs font-mono text-neutral-400 overflow-hidden"
         >
           <div v-for="ln in lineNumbers" :key="`ln-${ln}`" class="leading-6">{{ ln }}</div>
         </div>
         <textarea
           ref="textareaRef"
           v-model="editedText"
-          class="w-full h-full rounded-r-xl rounded-l-none bg-slate-950 border border-slate-700/70 text-white/90 p-4 font-mono text-sm leading-6 outline-none focus:border-blue-400/60 resize-none scrollbar-thin"
-          :class="profile.type === 'remote' ? 'text-white/50 cursor-default' : ''"
+          class="w-full h-full rounded-r-xl rounded-l-none bg-white/90 border border-neutral-200 text-neutral-900 p-4 font-mono text-sm leading-6 outline-none focus:border-blue-400/60 resize-none scrollbar-thin"
+          :class="profile.type === 'remote' ? 'text-neutral-500 cursor-default' : ''"
           spellcheck="false"
           :readonly="profile.type === 'remote'"
           @input="onEdit"

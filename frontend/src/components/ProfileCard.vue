@@ -39,7 +39,7 @@ function handleToggle(e: Event) {
           />
         </div>
         <div>
-          <h3 class="font-medium text-white/90 flex items-center gap-2">
+          <h3 class="font-medium text-neutral-900 flex items-center gap-2">
             {{ profile.name }}
             <span 
               v-if="profile.system_hosts_active" 
@@ -48,7 +48,7 @@ function handleToggle(e: Event) {
               Hosts
             </span>
           </h3>
-          <p class="text-sm text-white/50 mt-0.5">
+          <p class="text-sm text-neutral-500 mt-0.5">
             {{ profile.listen_ip }}:{{ profile.port }}
           </p>
           <p v-if="profile.proxy_error" class="text-xs text-red-400 mt-0.5">

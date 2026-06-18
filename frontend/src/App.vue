@@ -258,7 +258,7 @@ onUnmounted(() => {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
           </svg>
         </div>
-        <span class="text-white/90 font-medium text-sm">{{ t('appTitle') }}</span>
+        <span class="text-neutral-900 font-medium text-sm">{{ t('appTitle') }}</span>
       </div>
       <div class="flex items-center">
         <button class="titlebar-button" @click="showSettings = true" :title="t('settings')">
@@ -297,7 +297,7 @@ onUnmounted(() => {
           {{ t('adminRequiredBanner') }} · {{ t('adminRequiredAction') }}
         </div>
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-white/90">{{ t('profiles') }}</h2>
+          <h2 class="text-lg font-semibold text-neutral-900">{{ t('profiles') }}</h2>
           <button 
             class="glass-button text-sm text-blue-300 hover:text-blue-200"
             @click="showAddModal = true"
@@ -319,7 +319,7 @@ onUnmounted(() => {
             :placeholder="t('searchPlaceholder')"
             class="w-full glass-input text-sm pl-9"
           />
-          <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
         </div>
@@ -338,14 +338,14 @@ onUnmounted(() => {
 
           <div 
             v-if="filteredProfiles.length === 0 && profiles.length > 0"
-            class="glass-card p-8 text-center text-white/50"
+            class="glass-card p-8 text-center text-neutral-500"
           >
             <p>{{ t('noMatches') }}</p>
           </div>
 
           <div 
             v-if="profiles.length === 0"
-            class="glass-card p-8 text-center text-white/50"
+            class="glass-card p-8 text-center text-neutral-500"
           >
             <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
@@ -370,7 +370,7 @@ onUnmounted(() => {
 
         <div 
           v-else 
-          class="h-full glass-card flex items-center justify-center text-white/40"
+          class="h-full glass-card flex items-center justify-center text-neutral-400"
         >
           <div class="text-center">
             <svg class="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -406,16 +406,16 @@ onUnmounted(() => {
         v-if="showAdminModal"
         class="fixed inset-0 z-[60] flex items-center justify-center p-4"
       >
-        <div class="absolute inset-0 bg-black/60" @click="showAdminModal = false" />
+        <div class="absolute inset-0 bg-black/25" @click="showAdminModal = false" />
         <div class="relative glass-card w-full max-w-md p-6">
-          <h3 class="text-lg font-semibold text-white/90 mb-3">{{ t('adminRequiredTitle') }}</h3>
+          <h3 class="text-lg font-semibold text-neutral-900 mb-3">{{ t('adminRequiredTitle') }}</h3>
           <p class="text-sm text-amber-200 mb-2">{{ t('adminRequiredBanner') }}</p>
-          <p class="text-sm text-white/70 mb-5">{{ t('adminRequiredAction') }}</p>
+          <p class="text-sm text-neutral-700 mb-5">{{ t('adminRequiredAction') }}</p>
           <div class="flex justify-end gap-2">
             <button class="glass-button text-amber-200 border-amber-400/30" @click="handleRelaunchAsAdmin">
               {{ t('relaunchAsAdmin') }}
             </button>
-            <button class="glass-button text-white/80" @click="showAdminModal = false">
+            <button class="glass-button text-neutral-800" @click="showAdminModal = false">
               {{ t('gotIt') }}
             </button>
           </div>
@@ -428,37 +428,37 @@ onUnmounted(() => {
       <template v-if="contextMenu.show">
         <div class="fixed inset-0 z-[50]" @click="closeContextMenu" @contextmenu.prevent="closeContextMenu" />
         <div
-          class="fixed z-[51] rounded-xl border border-slate-600/60 bg-slate-800/95 backdrop-blur-md shadow-2xl py-1.5 min-w-[160px]"
+          class="fixed z-[51] rounded-xl border border-neutral-200 bg-white/80 backdrop-blur-md shadow-2xl py-1.5 min-w-[160px]"
           :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
         >
           <button
-            class="w-full text-left px-4 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors flex items-center gap-2.5"
+            class="w-full text-left px-4 py-2 text-sm text-neutral-800 hover:bg-white/10 transition-colors flex items-center gap-2.5"
             @click="handleExportFromMenu"
           >
-            <svg class="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
             {{ t('export') }}
           </button>
           <button
-            class="w-full text-left px-4 py-2 text-sm text-white/80 hover:bg-white/10 transition-colors flex items-center gap-2.5"
+            class="w-full text-left px-4 py-2 text-sm text-neutral-800 hover:bg-white/10 transition-colors flex items-center gap-2.5"
             @click="handleRenameFromMenu"
           >
-            <svg class="w-4 h-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
             </svg>
             {{ t('rename') }}
           </button>
-          <div class="border-t border-white/10 my-1" />
+          <div class="border-t border-neutral-200 my-1" />
           <button
             class="w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2.5"
             :class="profiles.find(p => p.name === contextMenu.profileName)?.system_hosts_active
-              ? 'text-white/30 cursor-not-allowed'
+              ? 'text-neutral-400 cursor-not-allowed'
               : 'text-red-400 hover:bg-red-500/10'"
             :disabled="!!profiles.find(p => p.name === contextMenu.profileName)?.system_hosts_active"
             @click="handleDeleteFromMenu"
           >
-            <svg class="w-4 h-4" :class="profiles.find(p => p.name === contextMenu.profileName)?.system_hosts_active ? 'text-white/20' : 'text-red-400/50'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4" :class="profiles.find(p => p.name === contextMenu.profileName)?.system_hosts_active ? 'text-neutral-300' : 'text-red-400/50'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
             </svg>
             {{ t('delete') }}

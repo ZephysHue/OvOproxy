@@ -30,9 +30,9 @@ const currentTheme = computed({
 
         <div class="relative glass-card w-full max-w-md p-6">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-semibold text-white/90">{{ t('settings') }}</h3>
+            <h3 class="text-xl font-semibold text-neutral-900">{{ t('settings') }}</h3>
             <button
-              class="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all"
+              class="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
               @click="emit('close')"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,14 +43,14 @@ const currentTheme = computed({
 
           <div class="space-y-4">
             <div>
-              <label class="block text-sm text-white/70 mb-2">{{ t('language') }}</label>
+              <label class="block text-sm text-neutral-700 mb-2">{{ t('language') }}</label>
               <select v-model="current" class="glass-input">
                 <option value="zh">{{ t('chinese') }}</option>
                 <option value="en">{{ t('english') }}</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm text-white/70 mb-2">{{ t('theme') }}</label>
+              <label class="block text-sm text-neutral-700 mb-2">{{ t('theme') }}</label>
               <select v-model="currentTheme" class="glass-input">
                 <option value="system">{{ t('themeSystem') }}</option>
                 <option value="dark">{{ t('themeDark') }}</option>
@@ -60,7 +60,7 @@ const currentTheme = computed({
           </div>
 
           <div class="flex justify-end gap-3 pt-6">
-            <button class="glass-button text-white/80" @click="emit('close')">
+            <button class="glass-button text-neutral-800" @click="emit('close')">
               {{ t('cancel') }}
             </button>
           </div>

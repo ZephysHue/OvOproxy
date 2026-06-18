@@ -62,8 +62,8 @@ function handleSubmit() {
         <div class="absolute inset-0 bg-black/60" @click="emit('close')" />
         <div class="relative glass-card w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-semibold text-white/90">{{ t('newProfile') }}</h3>
-            <button class="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all" @click="emit('close')">
+            <h3 class="text-xl font-semibold text-neutral-900">{{ t('newProfile') }}</h3>
+            <button class="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-all" @click="emit('close')">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -73,29 +73,29 @@ function handleSubmit() {
           <form @submit.prevent="handleSubmit" class="space-y-4">
             <!-- Type selector -->
             <div>
-              <label class="block text-sm text-white/60 mb-2">类型</label>
+              <label class="block text-sm text-neutral-500 mb-2">类型</label>
               <div class="flex gap-2">
                 <button type="button" class="flex-1 py-2 rounded-lg text-sm transition-all"
-                  :class="profileType === 'local' ? 'bg-blue-500/30 text-blue-200 border border-blue-400/30' : 'bg-white/5 text-white/40 border border-white/10'"
+                  :class="profileType === 'local' ? 'bg-blue-500/30 text-blue-200 border border-blue-400/30' : 'bg-white/5 text-neutral-400 border border-neutral-200'"
                   @click="profileType = 'local'">本地 Hosts</button>
                 <button type="button" class="flex-1 py-2 rounded-lg text-sm transition-all"
-                  :class="profileType === 'remote' ? 'bg-purple-500/30 text-purple-200 border border-purple-400/30' : 'bg-white/5 text-white/40 border border-white/10'"
+                  :class="profileType === 'remote' ? 'bg-purple-500/30 text-purple-200 border border-purple-400/30' : 'bg-white/5 text-neutral-400 border border-neutral-200'"
                   @click="profileType = 'remote'">订阅远程</button>
               </div>
             </div>
 
             <div>
-              <label class="block text-sm text-white/60 mb-2">{{ t('profileName') }}</label>
+              <label class="block text-sm text-neutral-500 mb-2">{{ t('profileName') }}</label>
               <input v-model="name" type="text" placeholder="e.g. dev-server" class="glass-input" autofocus />
             </div>
 
             <div class="flex gap-4">
               <div class="flex-1">
-                <label class="block text-sm text-white/60 mb-2">{{ t('listenIP') }}</label>
+                <label class="block text-sm text-neutral-500 mb-2">{{ t('listenIP') }}</label>
                 <input v-model="ip" type="text" placeholder="127.0.0.1" class="glass-input" />
               </div>
               <div class="w-32">
-                <label class="block text-sm text-white/60 mb-2">{{ t('port') }}</label>
+                <label class="block text-sm text-neutral-500 mb-2">{{ t('port') }}</label>
                 <input v-model.number="port" type="number" min="1" max="65535" class="glass-input" />
               </div>
             </div>
@@ -103,11 +103,11 @@ function handleSubmit() {
             <!-- Remote fields -->
             <template v-if="profileType === 'remote'">
               <div>
-                <label class="block text-sm text-white/60 mb-2">{{ t('subscriptionUrl') }}</label>
+                <label class="block text-sm text-neutral-500 mb-2">{{ t('subscriptionUrl') }}</label>
                 <input v-model="subUrl" type="url" placeholder="https://example.com/hosts.txt" class="glass-input" />
               </div>
               <div>
-                <label class="block text-sm text-white/60 mb-2">{{ t('refreshIntervalSeconds') }}</label>
+                <label class="block text-sm text-neutral-500 mb-2">{{ t('refreshIntervalSeconds') }}</label>
                 <select v-model.number="subInterval" class="glass-input py-2">
                   <option v-for="opt in SUBSCRIPTION_INTERVAL_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
@@ -117,7 +117,7 @@ function handleSubmit() {
             <div v-if="error" class="text-red-400 text-sm">{{ error }}</div>
 
             <div class="flex justify-end gap-3 pt-4">
-              <button type="button" class="glass-button text-white/60" @click="emit('close')">{{ t('cancel') }}</button>
+              <button type="button" class="glass-button text-neutral-500" @click="emit('close')">{{ t('cancel') }}</button>
               <button type="submit" class="glass-button bg-blue-500/30 text-blue-200 hover:bg-blue-500/40 border-blue-400/30">
                 {{ t('createProfile') }}
               </button>

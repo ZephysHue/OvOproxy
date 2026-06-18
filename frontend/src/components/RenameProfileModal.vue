@@ -40,9 +40,9 @@ function submit() {
 
         <div class="relative glass-card w-full max-w-md p-6">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-semibold text-white/90">{{ t('renameProfile') }}</h3>
+            <h3 class="text-xl font-semibold text-neutral-900">{{ t('renameProfile') }}</h3>
             <button
-              class="p-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-all"
+              class="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
               @click="emit('close')"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,13 +53,13 @@ function submit() {
 
           <form @submit.prevent="submit" class="space-y-4">
             <div>
-              <label class="block text-sm text-white/70 mb-2">{{ t('newProfileName') }}</label>
+              <label class="block text-sm text-neutral-700 mb-2">{{ t('newProfileName') }}</label>
               <input v-model="newName" class="glass-input" :placeholder="props.currentName" autofocus />
             </div>
             <div v-if="error" class="text-red-400 text-sm">{{ error }}</div>
 
             <div class="flex justify-end gap-3 pt-4">
-              <button type="button" class="glass-button text-white/80" @click="emit('close')">
+              <button type="button" class="glass-button text-neutral-800" @click="emit('close')">
                 {{ t('cancel') }}
               </button>
               <button type="submit" class="glass-button bg-blue-500/30 text-blue-200 hover:bg-blue-500/40 border-blue-400/30">
