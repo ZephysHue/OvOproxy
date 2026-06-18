@@ -2,6 +2,11 @@
 
 ## 2026-06-18
 
+### 建立推送前自测流程
+- **verify.sh**：14 项自动化检查（Go 交叉编译、TypeScript 类型、embed 路径、文件完整性、旧名称残留）
+- **main.go**：互斥锁名 `ZephyHostsManager_Mutex` → `HostOVOManager_Mutex`
+- 沙箱内无法运行 Wails 编译和 Windows exe 测试是已知限制
+
 ### 修复托盘图标 + 永久性图标同步机制
 - **tray.go**：托盘标题 `ZephyHosts` → `HostOVO`，tooltip 同步更新
 - **assets/tray.ico**：QQ 企鹅托盘图标（ImageMagick 生成，可靠格式）

@@ -17,9 +17,9 @@ var assets embed.FS
 
 func main() {
 	if os.Getenv("ZEPHY_SKIP_SINGLE_INSTANCE") != "1" {
-		acquired, err := singleinstance.Acquire("Global\\ZephyHostsManager_Mutex")
+		acquired, err := singleinstance.Acquire("Global\\HostOVOManager_Mutex")
 		if err == nil && !acquired {
-			println("Another instance is already running.")
+			println("HostOVO is already running.")
 			os.Exit(0)
 		}
 		defer singleinstance.Release()
