@@ -30,6 +30,8 @@ type App struct {
 	proxyManager      *proxymanager.Manager
 	subscriptionCancel context.CancelFunc
 	refreshMu         sync.Mutex // 串行化 RefreshSubscription
+	configDirty       bool
+	configSaveCancel  context.CancelFunc
 }
 
 type ProfileState struct {
@@ -98,7 +100,9 @@ func (a *App) RelaunchAsAdmin() error {
 
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
-	a.LoadConfig()
+	if err := a.LoadConfig(); err != nil {
+		runtime.LogError(ctx, "LoadConfig: "+err.Error())
+	}
 	a.startTray()
 	go func() {
 		a.startAllProxies()
@@ -108,6 +112,7 @@ func (a *App) startup(ctx context.Context) {
 		}
 	}()
 	a.startSubscriptionAutoRefresh()
+	a.startConfigBatcher()
 }
 
 func (a *App) startAllProxies() {
@@ -169,6 +174,10 @@ func (a *App) shutdown(ctx context.Context) {
 	if a.subscriptionCancel != nil {
 		a.subscriptionCancel()
 	}
+	if a.configSaveCancel != nil {
+		a.configSaveCancel()
+	}
+	a.configFlush()
 	a.proxyManager.StopAll()
 
 	admin, _ := winhosts.IsAdmin()
@@ -189,7 +198,10 @@ func (a *App) LoadConfig() error {
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		a.profiles = []ProfileState{}
-		return nil
+		if os.IsNotExist(err) {
+			return nil // 首次运行，无配置文件
+		}
+		return fmt.Errorf("load config: %w", err)
 	}
 
 	a.profiles = make([]ProfileState, len(cfg.Profiles))
@@ -1005,7 +1017,7 @@ func (a *App) updateLastFetch(name, timestamp string) {
 	for i := range a.profiles {
 		if a.profiles[i].Name == name {
 			a.profiles[i].SubscriptionLastFetch = timestamp
-			_ = a.saveConfig()
+			a.configDirty = true
 			return
 		}
 	}
@@ -1070,4 +1082,32 @@ func (a *App) saveConfig() error {
 		return err
 	}
 	return os.WriteFile(configPath, data, 0644)
+}
+
+func (a *App) startConfigBatcher() {
+	ctx, cancel := context.WithCancel(context.Background())
+	a.configSaveCancel = cancel
+
+	go func() {
+		ticker := time.NewTicker(60 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				a.configFlush()
+			}
+		}
+	}()
+}
+
+func (a *App) configFlush() {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if !a.configDirty {
+		return
+	}
+	a.configDirty = false
+	_ = a.saveConfig()
 }
