@@ -9,7 +9,7 @@ interface Profile {
   listen_ip: string
   port: number
   running: boolean
-  hosts_file: string
+  hosts_file?: string
   system_hosts_active?: boolean
   proxy_active?: boolean
   proxy_error?: string
@@ -372,7 +372,7 @@ function onEditorScroll() {
 
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-white/80 font-medium">{{ t('hostMappings') }}</h3>
-        <span class="text-sm text-white/40">{{ profile.hosts_file }}</span>
+        <span class="text-sm text-white/40">{{ profile.hosts_file || '(订阅远程)' }}</span>
       </div>
 
       <BackupPanel v-if="profile.type !== 'remote'" :profile-name="profile.name" @changed="emit('reloadHosts', profile.name)" />

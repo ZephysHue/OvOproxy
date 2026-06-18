@@ -13,7 +13,7 @@ interface Profile {
   name: string
   listen_ip: string
   port: number
-  hosts_file: string
+  hosts_file?: string
   running: boolean
   hosts: Record<string, string>
   system_hosts_active?: boolean
