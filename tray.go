@@ -23,8 +23,8 @@ func (a *App) startTray() {
 	trayOnce.Do(func() {
 		go systray.Run(func() {
 			systray.SetIcon(trayIcon)
-			systray.SetTitle("ZephyHosts")
-			systray.SetTooltip("ZephyHosts / Hosts 管理")
+			systray.SetTitle("HostOVO")
+			systray.SetTooltip("HostOVO / Hosts 管理")
 
 			currentItem := systray.AddMenuItem("当前启用 / Active: (none)", "Current enabled profile")
 			currentItem.Disable()

@@ -1,5 +1,16 @@
 # 更新日志
 
+## 2026-06-18
+
+### 修复托盘图标 + 永久性图标同步机制
+- **tray.go**：托盘标题 `ZephyHosts` → `HostOVO`，tooltip 同步更新
+- **assets/tray.ico**：从 `appicon.png` 生成 QQ 企鹅托盘图标（32×32）
+- **build.bat**：新增自动托盘图标生成步骤（PowerShell PNG→ICO 转换）
+- **永久性设计**：`appicon.png` 是唯一图标源，build.bat 自动派生 exe 图标 + 托盘图标 + 前端 logo，不再有多处手动维护的图标文件
+
+### 新增 CHANGELOG.md 更新日志
+- README.md 精简为项目简介，改动记录统一在 CHANGELOG.md
+
 ## 2026-06-17
 
 ### 删除冲突提示和 hosts 警告
