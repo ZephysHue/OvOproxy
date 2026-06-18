@@ -3,22 +3,8 @@ import { ref, watch, computed } from 'vue'
 import { t } from '../i18n'
 import { GetProxyAddress, SetSubscription, RemoveSubscription, RefreshSubscription } from '../../wailsjs/go/main/App'
 import BackupPanel from './BackupPanel.vue'
-
-interface Profile {
-  name: string
-  listen_ip: string
-  port: number
-  running: boolean
-  hosts_file?: string
-  system_hosts_active?: boolean
-  proxy_active?: boolean
-  proxy_error?: string
-  type?: string
-  subscription_url?: string
-  subscription_interval?: number
-  subscription_enabled?: boolean
-  subscription_last_fetch?: string
-}
+import type { Profile, ParsedLine, SubscriptionResult } from '../types'
+import { SUBSCRIPTION_INTERVAL_OPTIONS, DEFAULT_SUB_INTERVAL } from '../constants'
 
 const props = defineProps<{
   profile: Profile
@@ -35,8 +21,6 @@ const emit = defineEmits<{
 const editedText = ref('')
 const hasChanges = ref(false)
 const copiedMsg = ref(false)
-
-const proxyAddress = computed(() => `${props.profile.listen_ip}:${props.profile.port}`)
 
 watch(() => props.hostsText, (v) => {
   editedText.value = v || ''
@@ -66,18 +50,13 @@ async function copyProxyAddr() {
 // Subscription
 const showSubPanel = ref(props.profile.type === 'remote')
 const subUrl = ref('')
-const subInterval = ref(86400)
-const subIntervalOptions = [
-  { label: '1 天', value: 86400 },
-  { label: '7 天', value: 604800 },
-  { label: '30 天', value: 2592000 },
-]
+const subInterval = ref(DEFAULT_SUB_INTERVAL)
 const subRefreshing = ref(false)
-const subResult = ref<{ status: string; message: string; last_fetch: string; entry_count: number } | null>(null)
+const subResult = ref<SubscriptionResult | null>(null)
 
 watch(() => props.profile, (p) => {
   subUrl.value = p.subscription_url || ''
-  subInterval.value = p.subscription_interval || 86400
+  subInterval.value = p.subscription_interval || DEFAULT_SUB_INTERVAL
   if (p.subscription_last_fetch) {
     subResult.value = { status: 'ok', message: '', last_fetch: p.subscription_last_fetch, entry_count: 0 }
   }
@@ -125,15 +104,6 @@ const currentMatchIndex = ref(0)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const lineNumberRef = ref<HTMLDivElement | null>(null)
 const ruleFilter = ref('')
-
-type ParsedLine = {
-  lineNo: number
-  raw: string
-  type: 'mapping' | 'comment' | 'blank' | 'invalid'
-  enabled?: boolean
-  ip?: string
-  domain?: string
-}
 
 const parsedLines = computed<ParsedLine[]>(() => {
   const lines = editedText.value.split('\n')
@@ -411,7 +381,7 @@ function onEditorScroll() {
               class="glass-input text-xs py-1.5"
               @change="saveSubscription"
             >
-              <option v-for="opt in subIntervalOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              <option v-for="opt in SUBSCRIPTION_INTERVAL_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
             </select>
             <button
               class="glass-button text-[11px] px-2 py-1 text-cyan-300"

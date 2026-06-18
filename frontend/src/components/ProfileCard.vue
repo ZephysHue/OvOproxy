@@ -1,15 +1,6 @@
 <script setup lang="ts">
 import { t } from '../i18n'
-
-interface Profile {
-  name: string
-  listen_ip: string
-  port: number
-  running: boolean
-  system_hosts_active?: boolean
-  proxy_active?: boolean
-  proxy_error?: string
-}
+import type { Profile } from '../types'
 
 const props = defineProps<{
   profile: Profile

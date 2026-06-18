@@ -8,23 +8,7 @@ import AddProfileModal from './components/AddProfileModal.vue'
 import SettingsModal from './components/SettingsModal.vue'
 import RenameProfileModal from './components/RenameProfileModal.vue'
 import { t } from './i18n'
-
-interface Profile {
-  name: string
-  listen_ip: string
-  port: number
-  hosts_file?: string
-  running: boolean
-  hosts: Record<string, string>
-  system_hosts_active?: boolean
-  proxy_active?: boolean
-  proxy_error?: string
-  type?: string
-  subscription_url?: string
-  subscription_interval?: number
-  subscription_enabled?: boolean
-  subscription_last_fetch?: string
-}
+import type { Profile } from './types'
 
 const profiles = ref<Profile[]>([])
 const selectedProfile = ref<Profile | null>(null)

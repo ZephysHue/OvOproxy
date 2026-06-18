@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { t } from '../i18n'
+import { SUBSCRIPTION_INTERVAL_OPTIONS, DEFAULT_SUB_INTERVAL, DEFAULT_PORT } from '../constants'
 
 const props = defineProps<{
   show: boolean
@@ -15,20 +16,15 @@ const emit = defineEmits<{
 
 const name = ref('')
 const ip = ref('127.0.0.1')
-const port = ref(8080)
+const port = ref(DEFAULT_PORT)
 const error = ref('')
 const profileType = ref<'local' | 'remote'>('local')
 const subUrl = ref('')
-const subInterval = ref(86400)
-const subIntervalOptions = [
-  { label: '1 天', value: 86400 },
-  { label: '7 天', value: 604800 },
-  { label: '30 天', value: 2592000 },
-]
+const subInterval = ref(DEFAULT_SUB_INTERVAL)
 
 function nextAvailablePort(usedPorts: number[]) {
   const used = new Set(usedPorts)
-  let candidate = 8080
+  let candidate = DEFAULT_PORT
   while (used.has(candidate) && candidate <= 65535) candidate++
   return candidate > 65535 ? 8080 : candidate
 }
@@ -41,7 +37,7 @@ watch(() => props.show, (show) => {
     error.value = ''
     profileType.value = 'local'
     subUrl.value = ''
-    subInterval.value = 3600
+    subInterval.value = DEFAULT_SUB_INTERVAL
   }
 })
 
@@ -113,7 +109,7 @@ function handleSubmit() {
               <div>
                 <label class="block text-sm text-white/60 mb-2">{{ t('refreshIntervalSeconds') }}</label>
                 <select v-model.number="subInterval" class="glass-input py-2">
-                  <option v-for="opt in subIntervalOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                  <option v-for="opt in SUBSCRIPTION_INTERVAL_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                 </select>
               </div>
             </template>
