@@ -19,3 +19,6 @@ frontend/package.json.md5
 ## 本地临时目录
 Zephy/
 temp/
+
+## 用户配置（不含到仓库，从 configs.example/ 复制）
+configs/

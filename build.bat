@@ -23,6 +23,6 @@ echo === 复制到 release ===
 if not exist "release" mkdir release
 copy /y "build\bin\OvOproxy.exe" "release\OvOproxy.exe"
 echo === 复制配置文件 ===
-if not exist "release\configs" xcopy /y /e /i "configs" "release\configs" >nul
+if not exist "release\configs" xcopy /y /e /i "configs.example" "release\configs" >nul
 echo === 完成: release\OvOproxy.exe ===
 pause

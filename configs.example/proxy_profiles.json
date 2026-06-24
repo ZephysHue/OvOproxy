@@ -1,0 +1,16 @@
+{
+  "profiles": [
+    {
+      "name": "dev-a",
+      "listen_ip": "127.0.0.1",
+      "port": 8081,
+      "hosts_file": "configs/hosts/dev-a.hosts"
+    },
+    {
+      "name": "dev-b",
+      "listen_ip": "127.0.0.1",
+      "port": 8082,
+      "hosts_file": "configs/hosts/dev-b.hosts"
+    }
+  ]
+}
