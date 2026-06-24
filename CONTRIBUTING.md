@@ -1,95 +1,180 @@
 # OvOproxy 开发标准
 
-## 构建与发布
+面向单人/小团队的精简规范，不搞大公司那一套，但该有的底线都要有。
 
-### 发布前必须通过 verify.sh
+---
 
+## 1. Git 规范
+
+### 分支策略
+
+只用 `main` 分支，不打 PR，不走 review 流程（单人项目不需要）。但必须遵守：
+
+- **推送前本地通过 `bash verify.sh`**
+- 不推送编译不过的代码
+- 不推送包含个人配置的文件（configs/ 已 gitignore）
+
+### Commit 格式
+
+```
+<type>: <简短描述>
+
+<详细说明（可选）>
+```
+
+| type | 用途 |
+|------|------|
+| `feat` | 新功能 |
+| `fix` | 修 bug |
+| `refactor` | 重构（不改变功能） |
+| `docs` | 文档 |
+| `chore` | 杂项（构建、gitignore 等） |
+
+**规则**：一个 commit 只做一件事。不要混搭（比如 feat 里夹带 fix）。
+
+### Tag 与 Release
+
+- tag 格式：`v<major>.<minor>.<patch>`，如 `v1.0.1`
+- 每次 tag 必须对应 GitHub Release，上传 exe 作为资产
+- 不做 pre-release，直接 stable
+
+---
+
+## 2. 代码规范
+
+### Go
+
+- 遵循 `gofmt` 默认风格（不调参数）
+- 导出方法 → PascalCase，内部方法 → camelCase
+- 错误处理：不吞错误，至少 `runtime.LogError`
+- 并发：`mu.Lock()` 后必须有对应的 `defer mu.Unlock()`，禁止持锁做 IO
+- 配置文件结构体统一放 `internal/config/`
+- 新增包放在 `internal/<包名>/`
+
+### TypeScript / Vue
+
+- 组件命名：PascalCase 文件名（`ProfileCard.vue`）
+- Props 和 emits 必须显式声明类型
+- 组件间传对象深拷贝，不传引用
+- import 顺序：Vue 核心 → 第三方 → wailsjs → 项目内
+- `any` 尽量不用，非用不可时加注释说明原因
+- 新增 i18n key 必须同时补中英文
+
+### CSS
+
+- 全局样式放 `style.css` 的 `@layer components` 或 `@layer utilities` 中
+- 组件样式用 `<style scoped>`
+- 颜色、阴影、圆角等视觉参数统一用 CSS 变量（`style.css` 的 `:root`）
+- 不做暗色模式（已删除），只维护一套浅色变量
+
+---
+
+## 3. 构建与发布
+
+### 版本号
+
+- 唯一来源：`build.bat` 中的 `APP_VERSION` 变量
+- 编译时通过 ldflags 注入：`-X main.Version=v1.0.1`
+- 版本号递增规则：小修 `patch++`，新功能 `minor++`，大改 `major++`
+
+### 构建命令
+
+```batch
+.\build.bat
+```
+
+**不直接用 `wails build`**。build.bat 封装了：
+1. 清理旧进程 + 旧 build
+2. 清理前端缓存（dist/.vite）
+3. 重新 `npm run build`
+4. 带 ldflags 版本号编译
+5. 复制 exe → release/
+6. 首次自动初始化 configs + 复制模板
+
+### 发布 Checklist
+
+每次发布前逐项确认：
+
+- [ ] `bash verify.sh` 全部通过
+- [ ] 本地完整 `.\build.bat` 编译通过
+- [ ] 本地启动 exe 功能正常（手动冒烟）
+- [ ] `CHANGELOG.md` 已更新
+- [ ] `frontend/src/changelog.ts` 已同步
+- [ ] `README.md` 版本号已更新
+- [ ] `build.bat` 的 `APP_VERSION` 已更新
+- [ ] git commit + push
+- [ ] GitHub 创建 tag + Release + 上传 `release\OvOproxy.exe`
+
+---
+
+## 4. 前后端对接
+
+### Wails 绑定规则
+
+Go struct 导出到前端时，Wails 生成的 TypeScript 类型**保留 Go 字段原名**：
+
+```go
+type Result struct {
+    HasUpdate   bool   // 前端: result.HasUpdate
+    DownloadURL string // 前端: result.DownloadURL
+}
+```
+
+**例外**：Go struct 有 `json:"snake_case"` tag 时，前端对应 snake_case。
+
+### 新增 API
+
+1. Go 方法掛在 `*App` 上，PascalCase 命名
+2. 返回类型必须可导出（字段 PascalCase 或带 json tag）
+3. `wails build` 自动重新生成 `frontend/wailsjs/`
+4. 前端 import 路径：`../../wailsjs/go/main/App`
+
+---
+
+## 5. 质量保证
+
+### 编译检查
+
+**Go**：
 ```bash
-bash verify.sh
-```
-
-必须在 push 前通过所有检查。当前 5 大类：Go 交叉编译、前端 TS、embed 资源、关键文件完整性、旧名称残留。
-
-### build.bat 修改规则
-
-- 所有 `copy`/`xcopy` 目标目录必须先 `if not exist "..." mkdir ...`
-- 版本号在 `build.bat` 顶部的 `APP_VERSION` 变量修改
-- 每次发版同步三个地方：`build.bat` 版本号 → git tag → changelog
-
-### 发版流程
-
-```
-1. 改 build.bat 的 APP_VERSION
-2. 更新 frontend/src/changelog.ts + CHANGELOG.md
-3. 更新 README.md 版本号
-4. bash verify.sh → 通过
-5. git commit → git push
-6. GitHub Releases 新建 tag（与 APP_VERSION 一致），上传 release\OvOproxy.exe
-```
-
-## 前后端对接
-
-### Wails 绑定的类型规则
-
-Wails 自动生成的 TypeScript 类型保留 Go 字段的 **PascalCase**：
-
-| Go 结构体字段 | 前端 TS 字段 |
-|---------------|-------------|
-| `HasUpdate bool` | `result.HasUpdate` |
-| `DownloadURL string` | `result.DownloadURL` |
-| `Latest string` | `result.Latest` |
-
-**不是 snake_case！** 只有 Go struct 显式打了 `json:"snake_case"` tag 的才用小写。
-
-### 新增 Go 导出方法
-
-1. 方法名 PascalCase，接收器 `*App`
-2. 返回类型必须是可导出的 Go 类型
-3. 新增方法后，前端 `npm run build` 或 `wails build` 会自动重新生成 `frontend/wailsjs/` 绑定
-4. `frontend/wailsjs/` 在 `.gitignore` 中，不提交
-
-## 配置管理
-
-- `configs.example/` 是仓库模板，只放 dev-a/dev-b 示例
-- `configs/` 是本地用户配置，永远不提交
-- 首次运行 `app.go initConfigDir()` 从模板自动复制
-- build.bat 首次构建时从 `configs.example/` 初始化 `release/configs/`
-
-## Go 编码
-
-### 编译验证
-
-`go build ./...` 的 exit 0 不可信！因为 `go:embed` 缺失时会提前中止：
-```
 mkdir -p frontend/dist && echo '<html></html>' > frontend/dist/index.html
 GOOS=windows go build ./...
 ```
-验证完务必清理 dist 占位文件。
+注意：`go build ./...` exit 0 不代表编译通过！go:embed 资源缺失会提前中止。
 
-### 锁操作
-
-- 重新获取锁后验证状态仍有效（TOCTOU）
-- mutex.Unlock → mutex.Lock 窗口期间目标可能被删除
-
-## 前端编码
-
-### 构建前清缓存
-
-```
-if exist "frontend\dist" rmdir /s /q "frontend\dist"
-if exist "frontend\.vite" rmdir /s /q "frontend\.vite"
+**前端**：
+```bash
+cd frontend && npx vue-tsc --noEmit
 ```
 
-Vite 缓存残留会导致前端改动不生效，build.bat 已内置此步骤。
+### 必须测试的场景
 
-### Vue 组件间传对象
+- [ ] 首次启动（无 configs 目录）
+- [ ] 管理员权限 + 非管理员权限
+- [ ] 启用/禁用 Profile
+- [ ] 窗口隐藏 → 托盘菜单恢复
+- [ ] 在线更新检测流程
 
-必须深拷贝，不能传引用：
-```ts
-selectedProfile.value = { ...profile, hosts: { ...profile.hosts } }
-```
+### 不要求
 
-## Windows API
+- 不需要单元测试（单人项目，变动频繁，维护成本高于收益）
+- 不需要 lint（IDE 自带够了）
+- 不需要 CI（Windows 桌面应用，本地构建即可）
 
-- ICO 固定 32bit：`convert appicon.png -resize 32x32 -depth 8 assets/tray.ico`
-- 溢出翻转：所有 fixed/absolute 定位 UI 统一做溢出检测
+---
+
+## 6. 文档维护
+
+| 文档 | 内容 | 更新时机 |
+|------|------|---------|
+| `README.md` | 项目简介、功能列表、编译方式、版本号 | 每次发版 |
+| `CHANGELOG.md` | 版本更新明细 | 每次发版 |
+| `CONTRIBUTING.md` | 本文档（开发标准） | 标准变更时 |
+| `frontend/src/changelog.ts` | 更新日志结构化数据（设置面板展示用） | 每次发版 |
+
+---
+
+## 记录
+
+本标准的制定参考了项目实际开发中遇到的问题和业界通用实践。
+首次版本：v1.0.1，基于 2026-06-24 会话总结。
