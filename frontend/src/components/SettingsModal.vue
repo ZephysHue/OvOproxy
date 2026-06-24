@@ -32,12 +32,12 @@ async function handleCheckUpdate() {
   updateMsg.value = ''
   try {
     const result = await CheckUpdate()
-    if (result.has_update && result.download_url) {
+    if (result.HasUpdate && result.DownloadURL) {
       updateStatus.value = 'found'
-      updateMsg.value = t('newVersionFound') + ': ' + result.latest
+      updateMsg.value = t('newVersionFound') + ': ' + result.Latest
       // 自动下载
       updateStatus.value = 'downloading'
-      await DownloadUpdate(result.download_url)
+      await DownloadUpdate(result.DownloadURL)
       updateStatus.value = 'downloaded'
       updateMsg.value = t('downloadDone')
     } else {

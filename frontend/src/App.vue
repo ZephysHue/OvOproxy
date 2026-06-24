@@ -245,8 +245,8 @@ async function handleUpdateClick() {
   updateDownloading.value = true
   try {
     const result = await CheckUpdate()
-    if (result.has_update && result.download_url) {
-      await DownloadUpdate(result.download_url)
+    if (result.HasUpdate && result.DownloadURL) {
+      await DownloadUpdate(result.DownloadURL)
       updateDownloaded.value = true
       updateAvailable.value = true
     } else {
