@@ -71,6 +71,7 @@ const dict = {
     feedbackDesc: '如有功能优化建议或缺陷反馈，欢迎联系：',
     contactWeCom: '企业微信 @zhaozefeng',
     contactEmail: '邮箱 zephyhue@gmail.com',
+    changelogTitle: '更新日志',
   },
   en: {
     appTitle: 'OvOproxy',
@@ -137,6 +138,7 @@ const dict = {
     feedbackDesc: 'For feature suggestions or bug reports, please contact:',
     contactWeCom: 'WeCom @zhaozefeng',
     contactEmail: 'Email zephyhue@gmail.com',
+    changelogTitle: 'Changelog',
   },
 } satisfies Record<Lang, Record<string, string>>
 

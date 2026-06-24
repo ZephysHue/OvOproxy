@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { lang, setLang, t, type Lang } from '../i18n'
+import { changelog } from '../changelog'
 
 const props = defineProps<{
   show: boolean
@@ -69,6 +70,26 @@ const repoUrl = 'https://github.com/ZephysHue/OvOproxy'
               <div class="text-sm text-neutral-800 space-y-0.5">
                 <p>{{ t('contactWeCom') }}</p>
                 <p>{{ t('contactEmail') }}</p>
+              </div>
+            </div>
+
+            <!-- 分隔线 -->
+            <div class="border-t border-neutral-200/60 my-2"></div>
+
+            <!-- 更新日志 -->
+            <div>
+              <label class="block text-sm text-neutral-700 mb-2">{{ t('changelogTitle') }}</label>
+              <div class="changelog-scroll max-h-48 overflow-y-auto scrollbar-thin space-y-3 pr-1">
+                <div v-for="version in changelog" :key="version.date">
+                  <div class="text-xs font-semibold text-neutral-900 mb-1">{{ version.date }}</div>
+                  <div class="space-y-1">
+                    <div v-for="(entry, idx) in version.entries" :key="idx" class="text-xs text-neutral-600 leading-relaxed">
+                      <span class="font-medium text-neutral-800">{{ entry.title }}</span>
+                      <span class="text-neutral-400"> — </span>
+                      <span>{{ entry.desc }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
