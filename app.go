@@ -64,6 +64,15 @@ type SubscriptionResult struct {
 	EntryCount int    `json:"entry_count"`
 }
 
+// UpdateCheckResult 更新检查结果（必须在 main 包，供 Wails 绑定导出）
+type UpdateCheckResult struct {
+	HasUpdate   bool
+	Current     string
+	Latest      string
+	Changelog   string
+	DownloadURL string
+}
+
 func NewApp() *App {
 	exeDir := "."
 	if exe, err := os.Executable(); err == nil {
@@ -1214,10 +1223,17 @@ func (a *App) startUpdateChecker() {
 }
 
 // CheckUpdate 手动检查更新，供前端调用
-func (a *App) CheckUpdate() (*update.CheckResult, error) {
-	result, err := update.CheckForUpdate()
+func (a *App) CheckUpdate() (*UpdateCheckResult, error) {
+	r, err := update.CheckForUpdate()
 	if err != nil {
 		return nil, err
+	}
+	result := &UpdateCheckResult{
+		HasUpdate:   r.HasUpdate,
+		Current:     r.Current,
+		Latest:      r.Latest,
+		Changelog:   r.Changelog,
+		DownloadURL: r.DownloadURL,
 	}
 	if result.HasUpdate {
 		a.updateReady = true
