@@ -1,0 +1,9 @@
+# Hosts for 禁止升级
+# 禁止更新
+# 防止wps升级
+1.1.1.1 update.wps.cn
+127.0.0.1 updatepro.wps.cn
+# 禁止更新
+# 防止wps升级
+1.1.1.1 update.wps.cn
+127.0.0.1 updatepro.wps.cn

@@ -1,0 +1,698 @@
+# Hosts for 金山文档beta-11
+# beta环境--走11
+# 分支切换地址：https://www.kdocs.cn/kadmin/#/branch
+
+10.13.34.11 c.kdocs.cn www.kdocs.cn kdocs.cn
+# 国际版
+10.13.34.11 foreign.wps365.com
+47.74.42.238 jp.wps365.com
+
+119.3.170.233 www.kdoc.cn
+119.3.170.233 cc.wps.cn
+119.3.170.233 devops.kdocs.cn
+# log 
+120.92.124.158 klog-kibana-kdocs.wps.cn
+120.92.124.158 klog-weboffice.wps.cn
+120.92.124.158 klog-kibana.wps.cn
+
+# weboffice 
+10.13.34.11 ops.k8s.cn ops-test.wps.cn web.wps.cn res.web.wps.cn
+10.13.34.11 ddd.kdocs.cn
+# weboffice运维系统
+10.13.34.8 weboffice-publish.wps.cn
+10.13.89.252 weboffice-test.wps.cn
+10.13.34.11 doge.kdocs.cn doge.wps.cn
+10.13.34.11 kmon.kdocs.cn
+# weboffice aigc
+119.3.170.233 weboffice-plugin.wps.cn
+# copilot助手
+120.92.124.158 copilot.wps.cn
+120.92.124.158 lingxi.wps.cn
+120.92.124.158 aibot.wps.cn
+120.92.124.158 aibot-api.wps.cn
+
+# 云文档服务端
+120.92.124.158 clouddoc.wps.cn
+120.92.124.158 clouddoc.kdocs.cn
+
+# 扫码传图
+120.92.124.158 transferhelper.kdocs.cn
+# 企业域名
+10.13.34.11 365.kdocs.cn
+# 统一网关api
+120.92.124.158 api.wps.cn
+120.92.124.158 api.kdocs.cn
+
+119.3.170.233 internal.kdocs.cn qr.kdocs.cn
+119.3.170.233 docs.wps.cn docs.kdocs.cn
+119.3.170.233 wework.kdocs.cn
+119.3.170.233 kdzip-download.kdocs.cn
+119.3.170.233 processon.web.wps.cn
+
+120.92.124.158 account.wps.cn apivip.wps.cn notice.wps.cn openapi.kdocs.cn openapi.wps.cn qr.wps.cn tethysdb.wps.cn batch-download.wps.cn adm.wps.cn dmc.wps.cn pay.inner.wps.cn
+120.92.124.158 account.wpsplus.com
+120.92.124.158 qing.wps.cn drive.wps.cn mdrive.wps.cn roaming.wps.cn open.wps.cn zw-roaming.wps.cn zj-roaming.wps.cn
+120.92.124.158 pocket.wps.cn
+120.92.124.158 esign.wps.cn
+120.92.124.158 i.wps.cn
+120.92.124.158 doc2html.wps.cn
+120.92.124.158 preview.wps.cn
+120.92.124.158 tool.kdocs.cn
+
+10.23.10.11 ksoui.kdocs.cn
+10.23.10.11 poster.kdocs.cn
+
+# 知识库
+120.92.124.158 insight.wps.cn insight.kdocs.cn
+120.92.124.158 wiki.wps.cn wiki.kdocs.cn
+120.92.124.158 aidocs.wps.cn aidocs.kdocs.cn
+
+# wps官网
+120.92.124.158 www.wps.cn
+
+# 向量搜索业务
+120.92.124.158 milvus.kdocs.cn
+
+# 教育
+120.92.124.158 api-kos.wps.cn
+
+# 分享
+120.92.124.158 face-api.wps.cn
+120.92.124.158 face.wps.cn
+120.92.124.158 face-api.kdocs.cn
+120.92.124.158 face-session.wps.cn
+
+# 金山文档特权卡接口
+120.92.124.158 user-right.kdocs.cn
+
+# 账号
+10.23.10.11 account.kdocs.cn
+
+# 语音速记
+120.92.124.158 suji.wps.cn
+
+# wps教育空间
+120.92.124.158 ewb.wps.cn
+
+# pdf签名
+120.92.124.158 knobo.wps.cn
+120.92.124.158 knobo.kdocs.cn
+
+# 开放平台
+119.3.170.233 developer.kdocs.cn
+
+# 扫码服务切换
+120.92.124.158 pcv-test.wps.cn
+
+# 增长服务
+120.92.124.158 hd.wps.cn
+120.92.124.158 2c-cloud.wps.cn
+
+# 论文查重
+120.92.124.158 papercheck.wps.cn
+120.92.124.158 wxpapercheck.wps.cn
+54.222.253.12 motest.wps.cn
+120.92.124.158 paper.wps.cn
+120.92.124.158 vaf.wps.cn
+120.92.124.158 vaf.kdocs.cn
+120.92.124.158 kot-dc.wps.cn
+
+# 个人名片
+120.92.124.158 coop-contact.wps.cn
+120.92.124.158 coop-contact.kdocs.cn
+
+# AI
+119.3.170.233 solution.wps.cn
+120.92.124.158 aigc-gateway-test.ksord.com
+120.92.124.158 fe-static.wps.cn
+120.92.124.158 fe-static.wpscdn.cn
+120.92.124.158 copilot-api.wps.cn
+120.92.124.158 copilot-api.kdocs.cn
+120.92.124.158 copilot-login.wps.cn
+120.92.124.158 wps-ai-share.wps.cn
+120.92.124.158 clientweb.docer.wps.cn
+120.92.124.158 wps-ai-history-session.wps.cn
+
+# 文件收集服务
+120.92.124.158 filecollect.wps.cn
+120.92.124.158 filecollect.kdocs.cn
+
+# 稻壳验埋点
+120.92.124.158 utils.docer.wps.cn
+10.13.88.203 log-server-see.wps.kingsoft.net
+
+# 权益中心相关
+120.92.124.158 vas.wps.cn vas.kdocs.cn vas.docer.com
+120.92.124.158 vas.internal.wps.cn
+
+# WPS预览
+120.92.124.158 webpreview.wps.cn
+
+# wps端内收藏
+120.92.124.158 yunfavoritehelper.wps.cn
+
+# 移动客户端蜂巢配置
+120.92.124.158 honeycomb.wps.cn
+120.92.124.158 honeycomb-adm-test.wps.cn
+120.92.124.158 honeycomb.wpscdn.cn
+120.92.124.158 honeycomb-adm-dev-test.wps.cn
+120.92.124.158 honeycomb-plugins.wps.cn
+120.92.124.158 honeycomb-plugins.wpscdn.cn
+120.92.124.158 honeycomb-openapi-dev-test.wps.cn
+120.92.124.158 account-proxy.wps.cn
+120.92.124.158 honeycomb-emergency.wps.cn
+120.92.124.158 res-honeycomb.wpscdn.cn 
+
+# ppt关系图
+120.92.124.158 jmsuitmb.docer.wps.cn
+
+# ppt在线版式
+120.92.124.158 easy.wps.cn
+
+# ip归属地
+120.92.124.158 geo.wps.cn
+120.92.124.158 geo.kdocs.cn
+
+# 自定义域名
+10.13.34.11 xiaoye.kdocs.cn
+10.13.34.11 myweb.kdocs.cn
+10.13.34.11 mybeta.kdocs.cn
+10.13.34.11 zwtest.kdocs.cn
+10.13.34.11 appdoc.kdocs.cn
+10.13.34.11 gugu.kdocs.cn
+10.13.34.11 zzl.kdocs.cn
+10.13.34.11 wps.kdocs.cn
+10.13.34.11 qwtest.kdocs.cn
+10.13.34.11 xiaoyeqwtest.kdocs.cn
+10.13.34.11 aicopilot.kdocs.cn
+10.13.34.11 test222.kdocs.cn
+10.13.34.11 lhttest.kdocs.cn
+
+# fantasy测试环境
+10.23.17.116 fs-test.wps.kingsoft.net
+
+# ones新
+10.23.16.42 ones.wpsit.cn
+
+# 图片扫描
+120.92.124.158 spa.kdocs.cn
+
+# log 
+120.92.124.158 klog-kibana-kdocs.wps.cn
+120.92.124.158 klog-weboffice.wps.cn
+
+# 运营
+120.92.124.198 kdocs-server-kibana.wps.cn
+
+# 运营后台2
+120.92.124.158 opf.wps.cn
+120.92.124.158 opf-api.wps.cn
+
+#表格打电话管理后台
+120.92.124.158 twork.kdocs.cn
+
+# 个人团队
+120.92.124.158 t.kdocs.cn 
+
+# 账号的接口文档
+120.92.124.158 account-docs.wps.cn
+
+# wps+泛域名 测试
+124.70.43.32 wps.kdocs.cn
+
+# 新分享 &&& 发布场景
+120.92.124.158 yun.wps.cn yun-api.wps.cn yun-api.kdocs.cn
+120.92.124.158 pub-api.wps.cn pub-api.kdocs.cn
+120.92.124.158 cloud-wo.wps.cn
+120.92.124.158 publish.wps.cn pub.kdocs.cn 
+120.92.124.158 team-app-cdn.wps.cn
+120.92.124.158 temp.kdocs.cn
+
+# 轻记
+120.92.124.158 note-api.kdocs.cn
+120.92.124.158 note.kdocs.cn
+
+# 不走3rd
+120.92.124.158 store.kdocs.cn
+120.92.124.158 drive.kdocs.cn open.kdocs.cn 
+120.92.124.158 plus.kdocs.cn plussvr.kdocs.cn
+
+# 金山文档增值服务
+120.92.124.158 zt.kdocs.cn
+120.92.124.158 fileoperate.wps.cn fileoperate.kdocs.cn
+
+# wps打开
+120.92.124.158 softbus-msg.wps.cn
+120.92.124.158 softbus-device.wps.cn
+120.92.124.158 softbus-msg.kdocs.cn
+120.92.124.158 softbus-device.kdocs.cn
+120.92.124.158 ksopushapi.wps.cn
+120.92.124.158 ability.wps.cn
+120.92.124.158 transferhelper.wps.cn
+120.92.124.158 get.wps.cn 
+120.92.124.158 helpdesk.wps.cn 
+120.92.124.158 admin-get.wps.cn 
+120.92.124.158 admin.feedback.kso.kingsoft.net
+120.92.124.158 harmony.wps.cn
+
+# 增值运营
+120.92.124.158 op.mini.wps.cn
+
+# 发布内容
+10.13.34.11 p.kdocs.cn
+
+# 公众号文章保存到金山文档
+120.92.124.158 vas-api.kdocs.cn
+
+# woa
+120.92.124.158 app-woa.kdocs.cn
+120.92.124.158 app-woa.wps.cn
+120.92.124.158 announce-woa.wps.cn 
+120.92.124.158 woa.kdocs.cn
+120.92.124.158 woa.wps.cn
+120.92.124.158 koa.wps.cn
+120.92.124.158 admin-woa.wps.cn
+120.92.124.158 open-xz.wps.cn
+120.92.124.158 im.kdocs.cn
+120.92.124.158 open-woa.wps.cn
+120.92.124.158 tpllib-woa.wps.cn
+120.92.124.158 agent.wps.cn
+
+# 项目管理
+120.92.124.158 pm.wps.cn pm.kdocs.cn
+120.92.124.158 admin-vas2t.wps.cn
+120.92.124.158 wpm-api.wps.cn wpm-api.kdocs.cn 
+120.92.124.158 wpm-api-test.wps.cn
+120.92.124.158 wpm-api-test-ahead.wps.cn
+120.92.124.158 t.wps.cn
+120.92.124.158 t-internal.wps.cn
+
+# 安全文档
+120.92.124.158 securitydoc.wps.cn convertor.wps.cn securitydoc.kdocs.cn
+
+# 企业
+120.92.124.158 plus.wps.cn plussvr.wps.cn work.wps.cn store.wps.cn portal.wps.cn
+120.92.124.158 kuc.wps.cn
+120.92.124.158 kuc.kdocs.cn
+120.92.124.158 qn.wps.cn
+120.92.124.158 sys.wps.cn
+
+#全文美化接口
+10.23.10.147    dev.modou.wps.cn
+120.92.124.158  service-go.modou.wps.cn
+
+# 一键美化匹配服务
+120.92.124.158 easy.wps.cn
+# 识别服务
+120.92.124.158 biz.wps.cn
+# 套用服务
+120.92.124.158 service.modou.wps.cn
+# 下载服务
+120.92.124.158 download.modou.wps.cn
+# 上传服务
+120.92.124.158 meihua-ks3.wps.cn dcli-modou.wps.cn
+# 一键美化配置CDN域名
+120.92.124.158 api-md.wpscdn.cn
+# 一键美化配置CDN域名(旧）
+120.92.103.202 api.md.wpscdn.cn
+# 新美化域名(包含识别、匹配、套用、上传服务)
+120.92.124.158 ippt.wps.cn
+120.92.124.158 ippt.kdocs.cn
+# 极墨PPT、AI PPT、Word2PPT
+120.92.124.158 ppt.modou.wps.cn
+120.92.124.158 aippt.wps.cn
+120.92.124.158 svc.modou.wps.cn
+120.92.124.158 svc-admin.modou.wps.cn
+
+# 稻壳资源列表
+120.92.124.158 smart-font.docer.wps.cn
+120.92.124.158 smart-color.docer.wps.cn
+120.92.124.158 jmsuitmb.docer.wps.cn
+
+# AI识别
+120.92.124.158 yd.wps.cn
+120.92.124.158 ai.wps.cn
+120.92.124.158 ai.jimo.wps.cn
+
+# AI天策运营接口
+120.92.124.158 tiance.wps.cn
+120.92.124.158 tiance.kdocs.cn
+120.92.124.158 personal-ai-bus.kdocs.cn
+120.92.124.158 personal-ai-bus.wps.cn
+120.92.124.158 personal-web.wps.cn
+120.92.124.158 personal-web.kdocs.cn
+120.92.124.158 dce-gateway.internal.docer.wps.cn
+120.92.124.158 dce-gateway.docer.wps.cn
+120.92.124.158 test-tiance.docer.wps.cn
+
+# 前端HTML与静态文件CDN域名
+120.131.2.20 modou.wps.cn modouks.wps.cn
+120.92.103.202 s1.md.wpscdn.cn
+120.92.103.202 s2.md.wpscdn.cn
+120.92.103.202 s3.md.wpscdn.cn
+
+# admin VIP后台管理
+120.92.124.158 admin-vip.wps.cn
+120.92.124.158 admin.wps.cn
+120.92.124.158 pay-admin.wps.cn
+
+# 运营研发公共知识库
+10.13.88.223 wiki.ext.wps.cn
+
+# 运营活动域名
+120.92.88.179 www.tellbuy.cn
+
+# 金山文档运营推广域名
+119.3.170.233 pc.kdocs.cn
+
+# 权益中心
+10.13.146.235 pbtest.wps.cn
+
+# 运营组
+120.92.124.158 vip.wps.cn
+120.92.124.158 vip.kdocs.cn
+120.92.124.158 v3.vip.wps.cn
+120.92.124.158 vasapi.wps.cn vasapi.internal.wps.cn
+120.92.124.158 vipapi.wps.cn vipapi.internal.wps.cn
+120.92.124.158 pay.wps.cn pay.kdocs.cn
+120.92.124.158 le.wps.cn
+120.92.124.158 zt.wps.cn
+120.92.124.158 act.docer.com
+120.92.124.158 act.wps.cn
+120.92.124.158 home.wps.cn
+120.92.124.158 mall.wps.cn
+120.92.124.158 miniapp.wps.cn
+120.92.124.158 personal-act.wps.cn
+120.92.124.158 personal-act.wpscdn.cn
+120.92.124.158 easy.docer.wps.cn
+# 云空间？
+120.92.124.158 yunbiz.wps.cn
+120.92.124.158 yunsharespace.wps.cn
+
+# cdn
+120.92.124.158 s1.vip.wpscdn.cn
+120.92.124.158 s2.vip.wpscdn.cn
+120.92.124.158 s3.vip.wpscdn.cn
+120.92.124.158 s4.vip.wpscdn.cn
+120.92.124.158 s5.vip.wpscdn.cn
+120.92.124.158 s6.vip.wpscdn.cn
+
+# 自建应用
+120.92.124.158 adc.wps.cn
+
+# 便签
+120.92.124.158 note.wps.cn note-api.wps.cn
+
+# 极墨
+120.131.2.20 dweb-modou.wps.cn
+
+# 精品课
+120.92.124.158 dynamicedu.wps.cn
+
+# 金山日历
+120.92.124.158 rili.wps.cn et.wps.cn rili.kdocs.cn
+120.92.124.158 caldav.wps.cn
+
+# 审核  https://rv.ksoapp.com/#/task/ 登录账号：admin 密码: 123456
+120.92.124.158 rv.ksoapp.com api.rv.ksoapp.com
+120.92.124.158 fcheck-weboffice-internal.kdocs.cn
+
+# 表单
+120.92.124.158 f-api.wps.cn f.kdocs.cn f-api.kdocs.cn f.wps.cn fs.kdocs.cn
+120.92.124.158 private.internal.kdocs.cn
+
+# 表单自建应用
+120.92.124.158 dc.kdocs.cn
+
+# 远程会议
+120.92.124.158 tv.wps.cn meeting.kdocs.cn meeting.wps.cn
+10.13.148.56 meeting-test.wps.cn
+
+# 钉钉
+101.37.189.70 sh.docs.dingtalk.com
+
+# 消息推送
+# 消息源
+120.92.124.158 msgnotify.wps.cn
+120.92.15.97 msgpush.wps.cn
+120.92.124.158 pushapi.psvr.wps.cn
+120.92.124.158 ksopushapi.psvr.wps.cn
+# 客户端
+120.92.124.158 msgcenter.wps.cn msgcenter.kdocs.cn
+10.23.10.11 msadmin.kdocs.cn
+120.92.124.158 logintcp.wps.cn loginweb.wps.cn loginweb.kdocs.cn logintcpnv.wps.cn
+120.92.124.158 login.psvr.wps.cn
+120.131.1.183 login.wpscdn.cn
+120.92.10.156 push.psvr.wps.cn
+120.92.124.158 ksopush.kdocs.cn ksopush.wps.cn
+120.92.124.158 docteam.wps.cn
+# 移动端
+120.92.124.158 momsg.wps.cn
+120.92.124.158 mopush.api.wps.cn
+120.92.124.158 moapi.wps.cn
+120.92.124.158 iospush.wps.cn
+120.92.124.158 dev.iospush.wps.cn
+# 云应用
+120.92.124.158 docteamapi.wps.cn deviceapi.wps.cn
+120.92.45.5 msgevent.wps.cn
+120.92.21.27 msg.psvr.wps.cn
+
+# 智能同步限免 不带签名校验
+120.92.10.156 ut.psvr.wps.cn
+
+# 用户配置 不带签名校验
+120.92.10.156 conf.psvr.wps.cn
+
+# 话题系统
+120.92.45.5 doc-discuss.wps.cn
+
+# 待办
+120.92.124.158 todo.wps.cn
+120.92.124.158 todos-api.wps.cn
+120.92.124.158 todo.kdocs.cn
+120.92.124.158 todos-api.kdocs.cn
+
+# 5G活动服务
+120.92.124.158 hd.wps.cn hd.kdocs.cn
+
+# PC客户端
+10.23.14.55 wdl1.cache.wps.cn
+10.23.14.55 plg.cache.wpscdn.cn
+10.23.14.55 pc-plugin.wpscdn.cn
+10.23.14.55 pc-plugin-plg.wpscdn.cn
+10.23.14.55 pc-plugin-v3.wpscdn.cn
+10.13.89.30 hw.wdl.cache.wpscdn.cn
+120.92.18.153 flow.wps.cn
+120.92.18.153 cntr.wps.cn
+120.92.18.153 flowidle.wps.cn
+120.92.18.153 flowvip.wps.cn
+120.92.3.44 service.flow.wps.cn
+# 客户端升级
+127.0.0.1 update.wps.cn
+127.0.0.1 update1.wps.cn
+127.0.0.1 update2.wps.cn
+
+# 158环境共享文件夹邀请链接、企业团队邀请链接域名替换，需绑定hosts使用
+120.92.124.158 qwps.com wpsplus.com
+
+# mac 身份验证的接口没有权限，跳过验证
+120.92.4.186 pcfg.wps.cn
+
+# 流程图思维导图processon
+120.92.77.249 wps.processon.com
+120.92.77.249 wpstest.processon.com
+120.92.93.137 wpsexport.processon.com
+120.92.84.58 wpsai.processon.com
+
+# pdf转换
+120.92.124.158 icdcapi.wps.cn dcapi3.wps.cn dcapi.wps.cn
+120.92.124.158 kot-translate.wps.cn
+# 涂抹消除
+120.92.124.158 kot-pictures.wps.cn
+
+# 教育
+119.3.170.233 edu.kdocs.cn
+
+# 定稿
+120.92.124.158 vas2t-api.wps.cn vas2t-spa.wps.cn
+120.92.124.158 drive-docs.wps.cn vas2t-api.kdocs.cn
+
+# 内网文档、工具
+120.92.19.197 util.docer.wps.cn
+10.13.88.190 verdaccio.com
+10.13.88.190 docer-opendoc.com
+
+# 金山文档pc客户端本地服务
+127.0.0.1 localhost.wbridge.kdocs.cn
+
+# ic
+127.0.0.1 ic.wps.cn
+127.0.0.1 info.wps.cn
+127.0.0.1 dynsrv.wps.cn
+127.0.0.1 post.ksosoft.com
+127.0.0.1 tj.psvr.wps.cn
+127.0.0.1 dyn.psvr.wps.cn
+
+# 移动端
+120.92.124.158 docerserver.wps.cn
+120.92.124.158 moapi.wps.cn
+
+# 11woa
+120.92.124.158 koa.wps.cn  woa.wps.cn
+
+# 支付迁移 
+120.92.124.158 test-ksa.wps.cn
+
+# 金山文档微信公众号消息后台
+120.92.124.158 wxbmc.kdocs.cn
+120.92.124.158 wxbmc.wps.cn
+
+# 稻壳新建
+120.92.124.158 schema.op.wps.cn
+120.92.124.158 kvas-api.wps.cn
+120.92.124.158 km-api.kdocs.cn
+120.92.124.158 preview.z211.top
+120.92.124.158 vip-plugins.kdocs.cn
+
+# 合同检查接口
+120.92.124.158 plugins.kdocs.cn
+120.92.124.158 contract.wps.cn
+120.92.124.158 kdocs-vcl.ext.wps.cn
+120.92.124.158 kdocs-api.ext.wps.cn
+120.92.124.158 kdocs.ext.wps.cn
+# 打开https://contract.wps.cn/create.html即可进入创建页
+
+# 客户端
+120.92.124.158 open-mob.wps.cn
+120.92.124.158 mob.open.wps.cn
+
+# 三方后台
+120.92.124.158 open-mobapp.wps.cn
+120.92.124.158 open-mobapp-api.wps.cn
+
+# 自用后台
+120.92.124.158 open-mobmgr.wps.cn
+120.92.124.158 open-mobmgr-api.wps.cn
+
+# 稻壳合同后端接口
+120.92.124.158  contract-helper.docer.wps.cn
+
+# 金山文档稻壳增值
+120.92.124.158 kdocer-mo.wps.cn
+120.92.124.158 docer-kdocs.wps.cn
+120.92.124.158 vipapi.kdocs.cn
+120.92.124.158 docer-proxy.kdocs.cn
+120.92.124.158 newdoc.docer.wps.cn
+120.92.124.158 docer.kdocs.cn
+120.92.124.158 docer-mo.kdocs.cn
+120.92.124.158 docer-api.kdocs.cn
+120.92.124.158 docer-vcl.kdocs.cn
+120.92.124.158 docer-op.kdocs.cn
+120.92.124.158 op.scheme.wps.cn
+120.92.124.158 vip.kdocs.wps.cn
+
+# 稻壳
+120.92.116.140 www.docer.com
+120.92.19.197 docer.apidoc.com
+120.92.88.237 open.docer.wps.cn
+120.92.116.140 cart.docer.com
+120.92.116.140 chn.docer.com
+120.92.116.140 detail.docer.com
+120.92.116.140 docer.com
+120.92.116.140 list.docer.com
+120.92.116.140 my.docer.com
+120.92.116.140 pay.docer.com
+120.92.116.140 search.docer.com
+120.92.116.140 zt.docer.com
+120.92.124.158 docs-dapi.wps.cn
+120.92.124.158 test-oprime.docer.wps.cn
+120.92.124.158 test-ops.docer.wps.cn
+
+# 稻壳api&op
+120.92.117.12 api.docer.wps.cn
+120.92.117.12 op.docer.wps.cn
+120.92.117.12 docer-op.wps.cn
+
+# 稻壳客户端
+120.92.117.12 wps.docer.wps.cn
+
+# 稻壳
+120.92.124.158 docer.wps.cn
+120.92.124.158 chuangkit.docer.wps.cn
+120.92.124.158 kdoc-upload.docer.wps.cn
+120.92.124.158 common.docer.wps.cn
+120.92.124.158 open-search.docer.wps.cn
+120.92.124.158 artword.docer.wps.cn
+120.92.124.158 chart.docer.wps.cn
+120.92.124.158 client.docer.wps.cn
+120.92.124.158 icon.docer.wps.cn
+120.92.124.158 picture.docer.wps.cn
+120.92.124.158 automb.docer.wps.cn
+120.92.124.158 knowledge.docer.wps.cn
+120.92.124.158 paper.docer.wps.cn 
+120.92.124.158 library.docer.wps.cn
+120.92.124.158 resume.docer.wps.cn
+120.92.124.158 resume-web.docer.wps.cn
+120.92.124.158 api.docer.com
+120.92.124.158 order-api.docer.wps.cn
+120.92.124.158 docer-api.wps.cn
+120.92.117.12 wx.docer.com
+120.92.117.12 typesetting.docer.wps.cn
+120.92.117.12 skin.docer.wps.cn
+120.92.88.237 recom.docer.wps.cn
+120.92.124.158 font.docer.wps.cn
+120.92.88.237 super-mb.docer.wps.cn
+120.92.88.237 contract.helper.docer.wps.cn
+120.92.88.237 contract-api.docer.wps.cn
+120.92.124.158 order.docer.wps.cn
+120.92.124.158 designer.docer.com
+120.92.124.158 processon.docer.wps.cn
+120.92.114.217 f.docer.wps.cn
+120.92.114.217 table.docer.wps.cn
+120.92.114.217 audio.docer.wps.cn
+120.92.114.217 symbol.docer.wps.cn
+120.92.114.217 item-symbol.docer.wps.cn
+120.92.114.217 cover.docer.wps.cn
+120.92.124.158 text-box.docer.wps.cn
+120.92.124.158 download.docer.wps.cn
+120.92.124.158 government-helper.docer.wps.cn
+120.92.124.158 pendant.docer.wps.cn
+120.92.124.158 assess.docer.wps.cn
+120.92.124.158 recommend.docer.wps.cn
+120.92.124.158 paysource.docer.wps.cn
+120.92.124.158 cloudfont.docer.wps.cn
+120.92.88.237 imapi.docer.wpscdn.cn 
+120.92.124.158 account.internal.wps.cn
+120.92.124.158 client-mall.docer.wps.cn
+120.92.124.158 coupon.docer.wps.cn
+120.92.124.158 ds.docer.wps.cn
+120.92.124.158 caiji-web.docer.wps.cn
+
+# wps多语言插件
+10.23.14.67 wdl1.pcfg.cache.wpscdn.com
+
+120.131.9.48 wpsthumb.processon.com
+120.92.36.3   wpshd.processon.com
+
+
+
+#灵犀自定义域名
+120.92.124.158 lingxitest.kdocs.cn
+120.92.124.158 lingxitest2.kdocs.cn
+120.92.124.158 lingxitest3.kdocs.cn
+120.92.124.158  huimeng.kdocs.cn
+120.92.124.158  lingxi.kdocs.cn
+#AI PPT
+120.92.124.158 analyst.wps.cn
+139.9.142.107 ai-store.wps.cn
+120.92.124.158 copilot.wps.cn
+120.92.124.158 0c.wps.cn
+120.92.124.158 cc.wps.cn
+120.92.124.158 lingxi.wps.cn
+120.92.124.158 ppt.wps.cn
+
+#统一域名
+111.119.192.147 entry.wpscdn.com
+
+# 演示组件, html字符串转pptx
+120.92.124.158 docerserver.kdocs.cn
