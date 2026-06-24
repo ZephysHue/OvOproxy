@@ -23,14 +23,17 @@ func (a *App) startTray() {
 	trayOnce.Do(func() {
 		go systray.Run(func() {
 			systray.SetIcon(trayIcon)
-			systray.SetTitle("HostOVO")
-			systray.SetTooltip("HostOVO / Hosts 管理")
+			systray.SetTitle("OvOproxy")
+			systray.SetTooltip("OvOproxy / Hosts 管理")
+
+			// 显示主窗口放在最顶部，方便用户第一时间点击
+			showItem := systray.AddMenuItem("显示主窗口 / Show", "Show main window")
+			systray.AddSeparator()
 
 			currentItem := systray.AddMenuItem("当前启用 / Active: (none)", "Current enabled profile")
 			currentItem.Disable()
 			systray.AddSeparator()
 
-			showItem := systray.AddMenuItem("显示窗口 / Show", "Show window")
 			hideItem := systray.AddMenuItem("隐藏窗口 / Hide", "Hide window")
 			refreshUIItem := systray.AddMenuItem("刷新界面 / Refresh UI", "Refresh profile list in UI")
 			openConfigDirItem := systray.AddMenuItem("打开配置目录 / Open Config Folder", "Open configs folder")
@@ -149,10 +152,12 @@ func (a *App) startTray() {
 			go func() {
 				for {
 					select {
-					case <-showItem.ClickedCh:
-						runtime.WindowShow(a.ctx)
-						runtime.WindowUnminimise(a.ctx)
-						runtime.WindowSetAlwaysOnTop(a.ctx, false)
+				case <-showItem.ClickedCh:
+					runtime.WindowShow(a.ctx)
+					runtime.WindowUnminimise(a.ctx)
+					// true→false 翻转强制窗口到前台（Windows 经典手法）
+					runtime.WindowSetAlwaysOnTop(a.ctx, true)
+					runtime.WindowSetAlwaysOnTop(a.ctx, false)
 					case <-hideItem.ClickedCh:
 						runtime.WindowHide(a.ctx)
 					case <-refreshUIItem.ClickedCh:

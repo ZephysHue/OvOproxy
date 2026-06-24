@@ -1,4 +1,4 @@
-# HostOVO (原 Zephy / OvOproxy)
+# OvOproxy
 
 Windows 下的多 Profile Hosts 切换 + 本地代理轻量工具。
 
@@ -16,7 +16,7 @@ Windows 下的多 Profile Hosts 切换 + 本地代理轻量工具。
 .\build.bat
 ```
 
-编译产物：`release\HostOVO.exe`
+编译产物：`release\OvOproxy.exe`
 
 ## 更新日志
 

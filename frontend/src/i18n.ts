@@ -7,7 +7,7 @@ export const lang = ref<Lang>(stored === 'en' || stored === 'zh' ? stored : 'zh'
 
 const dict = {
   zh: {
-    appTitle: '多 Hosts 代理工具',
+    appTitle: 'OvOproxy',
     profiles: '配置列表',
     add: '新增',
     settings: '设置',
@@ -37,10 +37,6 @@ const dict = {
     language: '语言',
     chinese: '中文',
     english: 'English',
-    theme: '主题',
-    themeSystem: '跟随系统',
-    themeDark: '深色',
-    themeLight: '浅色',
     proxyActive: '代理运行中',
     proxyError: '端口错误',
     copyProxyAddr: '复制代理地址',
@@ -70,9 +66,14 @@ const dict = {
     subscriptionUrl: '订阅地址 (HTTPS)',
     manualRefresh: '手动更新',
     refreshIntervalSeconds: '刷新间隔',
+    repoUrl: '项目仓库',
+    feedbackTitle: '反馈与建议',
+    feedbackDesc: '如有功能优化建议或缺陷反馈，欢迎联系：',
+    contactWeCom: '企业微信 @zhaozefeng',
+    contactEmail: '邮箱 zephyhue@gmail.com',
   },
   en: {
-    appTitle: 'Multi-Host Proxy',
+    appTitle: 'OvOproxy',
     profiles: 'Profiles',
     add: 'Add',
     settings: 'Settings',
@@ -102,10 +103,6 @@ const dict = {
     language: 'Language',
     chinese: '中文',
     english: 'English',
-    theme: 'Theme',
-    themeSystem: 'System',
-    themeDark: 'Dark',
-    themeLight: 'Light',
     proxyActive: 'Proxy Running',
     proxyError: 'Port Error',
     copyProxyAddr: 'Copy Proxy Address',
@@ -135,6 +132,11 @@ const dict = {
     subscriptionUrl: 'Subscription URL (HTTPS)',
     manualRefresh: 'Manual Refresh',
     refreshIntervalSeconds: 'Interval',
+    repoUrl: 'Repository',
+    feedbackTitle: 'Feedback',
+    feedbackDesc: 'For feature suggestions or bug reports, please contact:',
+    contactWeCom: 'WeCom @zhaozefeng',
+    contactEmail: 'Email zephyhue@gmail.com',
   },
 } satisfies Record<Lang, Record<string, string>>
 

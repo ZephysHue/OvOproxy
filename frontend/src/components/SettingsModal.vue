@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { lang, setLang, t, type Lang } from '../i18n'
-import { themeMode, setThemeMode, type ThemeMode } from '../theme'
 
 const props = defineProps<{
   show: boolean
@@ -16,10 +15,7 @@ const current = computed({
   set: (v: Lang) => setLang(v),
 })
 
-const currentTheme = computed({
-  get: () => themeMode.value,
-  set: (v: ThemeMode) => setThemeMode(v),
-})
+const repoUrl = 'https://github.com/ZephysHue/OvOproxy'
 </script>
 
 <template>
@@ -49,13 +45,31 @@ const currentTheme = computed({
                 <option value="en">{{ t('english') }}</option>
               </select>
             </div>
+
+            <!-- 分隔线 -->
+            <div class="border-t border-neutral-200/60 my-2"></div>
+
+            <!-- 项目仓库 -->
             <div>
-              <label class="block text-sm text-neutral-700 mb-2">{{ t('theme') }}</label>
-              <select v-model="currentTheme" class="glass-input">
-                <option value="system">{{ t('themeSystem') }}</option>
-                <option value="dark">{{ t('themeDark') }}</option>
-                <option value="light">{{ t('themeLight') }}</option>
-              </select>
+              <label class="block text-sm text-neutral-700 mb-1.5">{{ t('repoUrl') }}</label>
+              <a
+                :href="repoUrl"
+                target="_blank"
+                rel="noopener"
+                class="text-sm text-blue-600 hover:text-blue-700 transition-colors break-all"
+              >
+                {{ repoUrl }}
+              </a>
+            </div>
+
+            <!-- 反馈联系方式 -->
+            <div>
+              <label class="block text-sm text-neutral-700 mb-1.5">{{ t('feedbackTitle') }}</label>
+              <p class="text-xs text-neutral-500 mb-1.5">{{ t('feedbackDesc') }}</p>
+              <div class="text-sm text-neutral-800 space-y-0.5">
+                <p>{{ t('contactWeCom') }}</p>
+                <p>{{ t('contactEmail') }}</p>
+              </div>
             </div>
           </div>
 
@@ -81,4 +95,3 @@ const currentTheme = computed({
   opacity: 0;
 }
 </style>
-

@@ -790,7 +790,7 @@ func (a *App) ClearHostsEntries(profileName string) error {
 }
 
 func (a *App) ResetHostsTemplate(profileName string) error {
-	text := `# This file is managed by Zephy
+	text := `# This file is managed by OvOproxy
 # Add entries in the format: IP DOMAIN
 # Example:
 # 120.92.124.158 account.wps.cn

@@ -17,9 +17,9 @@ var assets embed.FS
 
 func main() {
 	if os.Getenv("ZEPHY_SKIP_SINGLE_INSTANCE") != "1" {
-		acquired, err := singleinstance.Acquire("Global\\HostOVOManager_Mutex")
+		acquired, err := singleinstance.Acquire("Global\\OvOproxyManager_Mutex")
 		if err == nil && !acquired {
-			println("HostOVO is already running.")
+			println("OvOproxy is already running.")
 			os.Exit(0)
 		}
 		defer singleinstance.Release()
@@ -28,7 +28,7 @@ func main() {
 	app := NewApp()
 
 	err := wails.Run(&options.App{
-		Title:     "Multi-Host Proxy",
+		Title:     "OvOproxy",
 		Width:     1100,
 		Height:    700,
 		MinWidth:  900,
