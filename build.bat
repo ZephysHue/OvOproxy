@@ -4,6 +4,15 @@ taskkill /f /im OvOproxy.exe >nul 2>&1
 echo === 清理 ===
 if exist "release\OvOproxy.exe" del /f /q "release\OvOproxy.exe"
 if exist "build" rmdir /s /q "build"
+echo === 清理前端缓存 ===
+if exist "frontend\dist" rmdir /s /q "frontend\dist"
+if exist "frontend\.vite" rmdir /s /q "frontend\.vite"
+if exist "frontend\node_modules\.vite" rmdir /s /q "frontend\node_modules\.vite"
+echo === 重新构建前端 ===
+cd frontend
+call npm install
+call npm run build
+cd ..
 echo === 准备图标 ===
 if not exist "build" mkdir build
 copy /y "appicon.png" "build\appicon.png" >nul
