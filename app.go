@@ -98,8 +98,61 @@ func (a *App) RelaunchAsAdmin() error {
 	return nil
 }
 
+// initConfigDir 首次运行时从 configs.example 复制默认配置
+func (a *App) initConfigDir() {
+	cfgDir := filepath.Join(a.exeDir, "configs")
+	if _, err := os.Stat(cfgDir); err == nil {
+		return // 已有配置，不覆盖
+	}
+	exampleDir := filepath.Join(a.exeDir, "configs.example")
+	if _, err := os.Stat(exampleDir); err != nil {
+		return // 没有模板，跳过
+	}
+	_ = os.MkdirAll(cfgDir, 0755)
+	entries, err := os.ReadDir(exampleDir)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		src := filepath.Join(exampleDir, e.Name())
+		dst := filepath.Join(cfgDir, e.Name())
+		if e.IsDir() {
+			_ = copyDir(src, dst)
+		} else {
+			data, err := os.ReadFile(src)
+			if err != nil {
+				continue
+			}
+			_ = os.WriteFile(dst, data, 0644)
+		}
+	}
+}
+
+func copyDir(src, dst string) error {
+	_ = os.MkdirAll(dst, 0755)
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		srcPath := filepath.Join(src, e.Name())
+		dstPath := filepath.Join(dst, e.Name())
+		if e.IsDir() {
+			_ = copyDir(srcPath, dstPath)
+		} else {
+			data, err := os.ReadFile(srcPath)
+			if err != nil {
+				continue
+			}
+			_ = os.WriteFile(dstPath, data, 0644)
+		}
+	}
+	return nil
+}
+
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+	a.initConfigDir()
 	if err := a.LoadConfig(); err != nil {
 		runtime.LogError(ctx, "LoadConfig: "+err.Error())
 	}
