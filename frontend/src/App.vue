@@ -24,9 +24,9 @@ const showAdminModal = ref(false)
 const contextMenu = ref({ show: false, x: 0, y: 0, profileName: '' })
 
 // 更新相关
-const updateAvailable = ref(false)
-const updateDownloaded = ref(false)
-const updateDownloading = ref(false)
+const updateAvailable = ref<boolean>(false)
+const updateDownloaded = ref<boolean>(false)
+const updateDownloading = ref<boolean>(false)
 
 const filteredProfiles = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
@@ -237,11 +237,11 @@ function onDocumentClick() {
 }
 
 async function handleUpdateClick() {
-  if (updateDownloaded) {
+  if (updateDownloaded.value) {
     await ApplyUpdate()
     return
   }
-  if (updateDownloading) return
+  if (updateDownloading.value) return
   updateDownloading.value = true
   try {
     const result = await CheckUpdate()
