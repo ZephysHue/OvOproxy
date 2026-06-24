@@ -47,7 +47,14 @@ func SetVersion(v string) {
 
 func CheckForUpdate() (*CheckResult, error) {
 	client := &http.Client{Timeout: 15 * time.Second}
-	resp, err := client.Get(apiURL)
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
+	req.Header.Set("User-Agent", "OvOproxy")
+	req.Header.Set("Accept", "application/vnd.github+json")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("API 请求失败: %w", err)
 	}
