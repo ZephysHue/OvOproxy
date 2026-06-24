@@ -11,6 +11,7 @@ if exist "build\windows\icon.ico" del /f /q "build\windows\icon.ico"
 echo === 编译 ===
 wails build
 echo === 复制到 release ===
+if not exist "release" mkdir release
 copy /y "build\bin\OvOproxy.exe" "release\OvOproxy.exe"
 echo === 完成: release\OvOproxy.exe ===
 pause

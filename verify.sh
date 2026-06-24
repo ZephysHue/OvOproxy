@@ -7,7 +7,7 @@ pass() { echo "  ✅ $1"; ((PASS++)) || true; }
 fail() { echo "  ❌ $1"; ((FAIL++)) || true; }
 
 echo "========================================="
-echo "  HostOVO 推送前自测"
+echo "  OvOproxy 推送前自测"
 echo "========================================="
 
 # --- 1. Go 交叉编译 ---
@@ -75,19 +75,27 @@ check_residue() {
 }
 check_residue "ZephyHosts" "ZephyHosts"
 check_residue "MultiHostProxy" "MultiHostProxy"
+check_residue "HostOVO" "HostOVO"
 
 # wails.json 中的名称
-if grep -q '"outputfilename": "HostOVO"' wails.json; then
-  pass "wails.json outputfilename = HostOVO"
+if grep -q '"outputfilename": "OvOproxy"' wails.json; then
+  pass "wails.json outputfilename = OvOproxy"
 else
   fail "wails.json outputfilename 不正确!"
 fi
 
 # build.bat 中的名称
-if grep -q "HostOVO.exe" build.bat; then
-  pass "build.bat 引用 HostOVO.exe"
+if grep -q "OvOproxy.exe" build.bat; then
+  pass "build.bat 引用 OvOproxy.exe"
 else
-  fail "build.bat 未引用 HostOVO.exe!"
+  fail "build.bat 未引用 OvOproxy.exe!"
+fi
+
+# build.bat 必须包含 mkdir release
+if grep -q 'mkdir release' build.bat; then
+  pass "build.bat 包含 mkdir release"
+else
+  fail "build.bat 缺少 mkdir release，全新 clone 后 copy 会失败!"
 fi
 
 echo "========================================="
