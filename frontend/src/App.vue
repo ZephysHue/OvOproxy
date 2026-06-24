@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, reactive } from 'vue'
 import { GetProfiles, StartProfile, StopProfile, AddProfile, AddRemoteProfile, DeleteProfile, ExportHostsToDialog, GetHostsText, SetHostsText, RenameProfile, IsAdmin, GetProxyAddress, RelaunchAsAdmin, CheckUpdate, DownloadUpdate, ApplyUpdate, GetVersion } from '../wailsjs/go/main/App'
 import { WindowMinimise, WindowToggleMaximise, Quit, EventsOn } from '../wailsjs/runtime/runtime'
 import ProfileCard from './components/ProfileCard.vue'
@@ -24,9 +24,11 @@ const showAdminModal = ref(false)
 const contextMenu = ref({ show: false, x: 0, y: 0, profileName: '' })
 
 // 更新相关
-const updateAvailable = ref<boolean>(false)
-const updateDownloaded = ref<boolean>(false)
-const updateDownloading = ref<boolean>(false)
+const updateState = reactive({
+  available: false,
+  downloaded: false,
+  downloading: false,
+})
 
 const filteredProfiles = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
@@ -237,18 +239,18 @@ function onDocumentClick() {
 }
 
 async function handleUpdateClick() {
-  if (updateDownloaded.value) {
+  if (updateState.downloaded) {
     await ApplyUpdate()
     return
   }
-  if (updateDownloading.value) return
-  updateDownloading.value = true
+  if (updateState.downloading) return
+  updateState.downloading = true
   try {
     const result = await CheckUpdate()
     if (result.HasUpdate && result.DownloadURL) {
       await DownloadUpdate(result.DownloadURL)
-      updateDownloaded.value = true
-      updateAvailable.value = true
+      updateState.downloaded = true
+      updateState.available = true
     } else {
       alert(t('alreadyLatest'))
     }
@@ -256,7 +258,7 @@ async function handleUpdateClick() {
     console.error('Update failed:', e)
     alert(e?.message || String(e))
   }
-  updateDownloading.value = false
+  updateState.downloading = false
 }
 
 onMounted(() => {
@@ -268,8 +270,8 @@ onMounted(() => {
       loadHostsText(selectedProfile.value.name)
     }
   })
-  EventsOn('update:available', () => { updateAvailable.value = true })
-  EventsOn('update:downloaded', () => { updateDownloaded.value = true; updateAvailable.value = true })
+  EventsOn('update:available', () => { updateState.available = true })
+  EventsOn('update:downloaded', () => { updateState.downloaded = true; updateState.available = true })
   document.addEventListener('click', onDocumentClick)
 })
 
@@ -291,13 +293,13 @@ onUnmounted(() => {
         <span class="text-neutral-900 font-medium text-sm">{{ t('appTitle') }}</span>
         <!-- 更新提示气泡 -->
         <span
-          v-if="updateAvailable"
+          v-if="updateState.available"
           class="update-badge"
           @click="handleUpdateClick"
-          :title="updateDownloaded ? t('downloadDone') : t('updateDot')"
+          :title="updateState.downloaded ? t('downloadDone') : t('updateDot')"
         >
           <span class="update-dot"></span>
-          <span class="update-text">{{ updateDownloaded ? t('restartNow') : t('updateDot') }}</span>
+          <span class="update-text">{{ updateState.downloaded ? t('restartNow') : t('updateDot') }}</span>
         </span>
       </div>
       <div class="flex items-center">
