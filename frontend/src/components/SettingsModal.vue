@@ -63,8 +63,8 @@ onMounted(() => { loadVersion() })
       <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/60" @click="emit('close')" />
 
-        <div class="relative glass-card w-full max-w-md p-6">
-          <div class="flex items-center justify-between mb-6">
+        <div class="relative glass-card w-full max-w-md max-h-[85vh] flex flex-col p-6">
+          <div class="flex items-center justify-between mb-4 shrink-0">
             <h3 class="text-xl font-semibold text-neutral-900">{{ t('settings') }}</h3>
             <button
               class="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
@@ -76,7 +76,7 @@ onMounted(() => { loadVersion() })
             </button>
           </div>
 
-          <div class="space-y-4">
+          <div class="flex-1 overflow-y-auto scrollbar-thin space-y-4 pr-1">
             <div>
               <label class="block text-sm text-neutral-700 mb-2">{{ t('language') }}</label>
               <select v-model="current" class="glass-input">
@@ -147,7 +147,7 @@ onMounted(() => { loadVersion() })
             <!-- 更新日志 -->
             <div>
               <label class="block text-sm text-neutral-700 mb-2">{{ t('changelogTitle') }}</label>
-              <div class="changelog-scroll max-h-48 overflow-y-auto scrollbar-thin space-y-3 pr-1">
+              <div class="space-y-3">
                 <div v-for="version in changelog" :key="version.date">
                   <div class="text-xs font-semibold text-neutral-900 mb-1">{{ version.date }}</div>
                   <div class="space-y-1">
@@ -162,7 +162,7 @@ onMounted(() => { loadVersion() })
             </div>
           </div>
 
-          <div class="flex justify-end gap-3 pt-6">
+          <div class="flex justify-end gap-3 pt-4 shrink-0">
             <button class="glass-button text-neutral-800" @click="emit('close')">
               {{ t('cancel') }}
             </button>
