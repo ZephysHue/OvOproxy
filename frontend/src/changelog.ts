@@ -13,6 +13,16 @@ export interface ChangelogVersion {
 
 export const changelog: ChangelogVersion[] = [
   {
+    date: 'v1.0.1 (2026-06-24)',
+    entries: [
+      { title: '在线更新', desc: '支持 GitHub Releases 自动检测更新，12h 定时检查 + 标题栏红点提示 + 下载后重启替换' },
+      { title: '设置面板增强', desc: '新增当前版本号显示 + 手动检查更新按钮 + 重启应用按钮' },
+      { title: '托盘菜单修复', desc: '每个 Profile 合并为一个切换项（不再显示启用/禁用两份）' },
+      { title: '配置模板化', desc: 'configs 从仓库移除改为 configs.example 模板，clone 不泄露用户配置' },
+      { title: '构建流程优化', desc: '编译前清理前端缓存，ldflags 注入版本号，首次构建自动创建 configs' },
+    ],
+  },
+  {
     date: '2026-06-24',
     entries: [
       { title: '统一应用命名', desc: '全位置统一为 OvOproxy（窗口标题、托盘、exe、顶栏等）' },

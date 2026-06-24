@@ -18,8 +18,12 @@ import (
 	"zephy/internal/config"
 	"zephy/internal/hosts"
 	"zephy/internal/proxymanager"
+	"zephy/internal/update"
 	"zephy/internal/winhosts"
 )
+
+// Version 编译时通过 ldflags 注入，默认 "dev"
+var Version = "dev"
 
 type App struct {
 	ctx               context.Context
@@ -32,6 +36,9 @@ type App struct {
 	refreshMu         sync.Mutex // 串行化 RefreshSubscription
 	configDirty       bool
 	configSaveCancel  context.CancelFunc
+	updateCheckCancel context.CancelFunc
+	updateReady       bool
+	updateDownloading bool
 }
 
 type ProfileState struct {
@@ -153,6 +160,7 @@ func copyDir(src, dst string) error {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.initConfigDir()
+	update.SetVersion(Version)
 	if err := a.LoadConfig(); err != nil {
 		runtime.LogError(ctx, "LoadConfig: "+err.Error())
 	}
@@ -166,6 +174,7 @@ func (a *App) startup(ctx context.Context) {
 	}()
 	a.startSubscriptionAutoRefresh()
 	a.startConfigBatcher()
+	a.startUpdateChecker()
 }
 
 func (a *App) startAllProxies() {
@@ -1163,4 +1172,85 @@ func (a *App) configFlush() {
 	}
 	a.configDirty = false
 	_ = a.saveConfig()
+}
+
+// --- 更新检测 ---
+
+func (a *App) startUpdateChecker() {
+	ctx, cancel := context.WithCancel(context.Background())
+	a.updateCheckCancel = cancel
+
+	doCheck := func() {
+		result, err := update.CheckForUpdate()
+		if err != nil || !result.HasUpdate {
+			return
+		}
+		a.updateReady = true
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "update:available")
+		}
+	}
+
+	// 启动后延迟 30 秒再检查
+	go func() {
+		select {
+		case <-time.After(30 * time.Second):
+			doCheck()
+		case <-ctx.Done():
+			return
+		}
+
+		ticker := time.NewTicker(12 * time.Hour)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				doCheck()
+			}
+		}
+	}()
+}
+
+// CheckUpdate 手动检查更新，供前端调用
+func (a *App) CheckUpdate() (*update.CheckResult, error) {
+	result, err := update.CheckForUpdate()
+	if err != nil {
+		return nil, err
+	}
+	if result.HasUpdate {
+		a.updateReady = true
+		if a.ctx != nil {
+			runtime.EventsEmit(a.ctx, "update:available")
+		}
+	}
+	return result, nil
+}
+
+// DownloadUpdate 下载更新
+func (a *App) DownloadUpdate(url string) error {
+	a.updateDownloading = true
+	defer func() { a.updateDownloading = false }()
+
+	path, err := update.DownloadUpdate(url)
+	if err != nil {
+		return err
+	}
+	_ = path
+	a.updateReady = true
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "update:downloaded")
+	}
+	return nil
+}
+
+// ApplyUpdate 重启并应用更新
+func (a *App) ApplyUpdate() error {
+	return update.ApplyAndRestart()
+}
+
+// GetVersion 返回当前版本号
+func (a *App) GetVersion() string {
+	return Version
 }

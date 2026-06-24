@@ -17,8 +17,9 @@ echo === 准备图标 ===
 if not exist "build" mkdir build
 copy /y "appicon.png" "build\appicon.png" >nul
 if exist "build\windows\icon.ico" del /f /q "build\windows\icon.ico"
-echo === 编译 ===
-wails build
+echo === 编译 (版本号请在此修改) ===
+set APP_VERSION=v1.0.1
+wails build -ldflags "-X main.Version=%APP_VERSION%"
 echo === 复制到 release ===
 if not exist "release" mkdir release
 copy /y "build\bin\OvOproxy.exe" "release\OvOproxy.exe"

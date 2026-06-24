@@ -26,7 +26,7 @@ func (a *App) startTray() {
 			systray.SetTitle("OvOproxy")
 			systray.SetTooltip("OvOproxy / Hosts 管理")
 
-			// 显示主窗口放在最顶部，方便用户第一时间点击
+			// 显示主窗口放在最顶部
 			showItem := systray.AddMenuItem("显示主窗口 / Show", "Show main window")
 			systray.AddSeparator()
 
@@ -61,27 +61,24 @@ func (a *App) startTray() {
 				return out
 			}
 
-			profileEnableItems := make(map[string]*systray.MenuItem)
-			profileDisableItems := make(map[string]*systray.MenuItem)
+			// 每个 profile 一个切换项
+			profileToggleItems := make(map[string]*systray.MenuItem)
 			for _, p := range getProfilesSorted() {
-				enableTitle := fmt.Sprintf("启用 / Enable: %s", p.Name)
-				disableTitle := fmt.Sprintf("禁用 / Disable: %s", p.Name)
+				title := fmt.Sprintf("  %s", p.Name)
 				if p.Active {
-					enableTitle = fmt.Sprintf("● 启用 / Enable: %s", p.Name)
-					disableTitle = fmt.Sprintf("● 禁用 / Disable: %s", p.Name)
+					title = fmt.Sprintf("● %s", p.Name)
 				}
-				profileEnableItems[p.Name] = systray.AddMenuItem(enableTitle, "Enable this profile")
-				profileDisableItems[p.Name] = systray.AddMenuItem(disableTitle, "Disable this profile")
+				profileToggleItems[p.Name] = systray.AddMenuItem(title, "Toggle this profile")
 			}
 
 			updateTrayStatus := func() {
 				a.mu.RLock()
-				activeNames := make([]string, 0)
 				activeSet := map[string]bool{}
+				activeNames := make([]string, 0)
 				for _, p := range a.profiles {
 					if p.SystemHostsActive {
-						activeNames = append(activeNames, p.Name)
 						activeSet[p.Name] = true
+						activeNames = append(activeNames, p.Name)
 					}
 				}
 				a.mu.RUnlock()
@@ -92,41 +89,37 @@ func (a *App) startTray() {
 				} else {
 					currentItem.SetTitle(fmt.Sprintf("当前启用 / Active: %s", strings.Join(activeNames, ", ")))
 				}
-				for name, item := range profileEnableItems {
+				for name, item := range profileToggleItems {
 					if activeSet[name] {
-						item.SetTitle(fmt.Sprintf("● 启用 / Enable: %s", name))
+						item.SetTitle(fmt.Sprintf("● %s", name))
 					} else {
-						item.SetTitle(fmt.Sprintf("启用 / Enable: %s", name))
-					}
-				}
-				for name, item := range profileDisableItems {
-					if activeSet[name] {
-						item.SetTitle(fmt.Sprintf("● 禁用 / Disable: %s", name))
-					} else {
-						item.SetTitle(fmt.Sprintf("禁用 / Disable: %s", name))
+						item.SetTitle(fmt.Sprintf("  %s", name))
 					}
 				}
 			}
 
 			updateTrayStatus()
 
-			for name, item := range profileEnableItems {
+			// 点击切换
+			for name, item := range profileToggleItems {
 				profileName := name
 				profileItem := item
 				go func() {
 					for range profileItem.ClickedCh {
-						_ = a.StartProfile(profileName)
-						runtime.EventsEmit(a.ctx, "profiles:changed")
-						updateTrayStatus()
-					}
-				}()
-			}
-			for name, item := range profileDisableItems {
-				profileName := name
-				profileItem := item
-				go func() {
-					for range profileItem.ClickedCh {
-						_ = a.StopProfile(profileName)
+						a.mu.RLock()
+						var active bool
+						for _, p := range a.profiles {
+							if p.Name == profileName {
+								active = p.SystemHostsActive
+								break
+							}
+						}
+						a.mu.RUnlock()
+						if active {
+							_ = a.StopProfile(profileName)
+						} else {
+							_ = a.StartProfile(profileName)
+						}
 						runtime.EventsEmit(a.ctx, "profiles:changed")
 						updateTrayStatus()
 					}
@@ -152,12 +145,11 @@ func (a *App) startTray() {
 			go func() {
 				for {
 					select {
-				case <-showItem.ClickedCh:
-					runtime.WindowShow(a.ctx)
-					runtime.WindowUnminimise(a.ctx)
-					// true→false 翻转强制窗口到前台（Windows 经典手法）
-					runtime.WindowSetAlwaysOnTop(a.ctx, true)
-					runtime.WindowSetAlwaysOnTop(a.ctx, false)
+					case <-showItem.ClickedCh:
+						runtime.WindowShow(a.ctx)
+						runtime.WindowUnminimise(a.ctx)
+						runtime.WindowSetAlwaysOnTop(a.ctx, true)
+						runtime.WindowSetAlwaysOnTop(a.ctx, false)
 					case <-hideItem.ClickedCh:
 						runtime.WindowHide(a.ctx)
 					case <-refreshUIItem.ClickedCh:
@@ -182,4 +174,3 @@ func (a *App) startTray() {
 		}, func() {})
 	})
 }
-

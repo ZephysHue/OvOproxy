@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { lang, setLang, t, type Lang } from '../i18n'
 import { changelog } from '../changelog'
+import { GetVersion, CheckUpdate, DownloadUpdate, ApplyUpdate } from '../../wailsjs/go/main/App'
 
 const props = defineProps<{
   show: boolean
@@ -17,6 +18,43 @@ const current = computed({
 })
 
 const repoUrl = 'https://github.com/ZephysHue/OvOproxy'
+
+const appVersion = ref('')
+const updateStatus = ref('') // '' | 'checking' | 'latest' | 'found' | 'downloading' | 'downloaded'
+const updateMsg = ref('')
+
+async function loadVersion() {
+  try { appVersion.value = await GetVersion() } catch { appVersion.value = 'unknown' }
+}
+
+async function handleCheckUpdate() {
+  updateStatus.value = 'checking'
+  updateMsg.value = ''
+  try {
+    const result = await CheckUpdate()
+    if (result.has_update && result.download_url) {
+      updateStatus.value = 'found'
+      updateMsg.value = t('newVersionFound') + ': ' + result.latest
+      // 自动下载
+      updateStatus.value = 'downloading'
+      await DownloadUpdate(result.download_url)
+      updateStatus.value = 'downloaded'
+      updateMsg.value = t('downloadDone')
+    } else {
+      updateStatus.value = 'latest'
+      updateMsg.value = t('alreadyLatest')
+    }
+  } catch (e: any) {
+    updateStatus.value = ''
+    updateMsg.value = e?.message || String(e)
+  }
+}
+
+async function handleRestart() {
+  await ApplyUpdate()
+}
+
+onMounted(() => { loadVersion() })
 </script>
 
 <template>
@@ -45,6 +83,36 @@ const repoUrl = 'https://github.com/ZephysHue/OvOproxy'
                 <option value="zh">{{ t('chinese') }}</option>
                 <option value="en">{{ t('english') }}</option>
               </select>
+            </div>
+
+            <!-- 分隔线 -->
+            <div class="border-t border-neutral-200/60 my-2"></div>
+
+            <!-- 版本与更新 -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-sm text-neutral-700">{{ t('versionLabel') }}</label>
+                <span class="text-xs text-neutral-500">{{ appVersion }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  class="glass-button text-sm text-blue-600"
+                  :disabled="updateStatus === 'checking' || updateStatus === 'downloading'"
+                  @click="handleCheckUpdate"
+                >
+                  {{ updateStatus === 'checking' || updateStatus === 'downloading' ? t('checkingUpdate') : t('checkUpdate') }}
+                </button>
+                <button
+                  v-if="updateStatus === 'downloaded'"
+                  class="glass-button text-sm text-red-500 border-red-300/40 hover:text-red-600"
+                  @click="handleRestart"
+                >
+                  {{ t('restartNow') }}
+                </button>
+              </div>
+              <p v-if="updateMsg" class="text-xs mt-1.5" :class="updateStatus === 'downloaded' ? 'text-green-600' : updateStatus === 'latest' ? 'text-neutral-500' : 'text-blue-600'">
+                {{ updateMsg }}
+              </p>
             </div>
 
             <!-- 分隔线 -->
