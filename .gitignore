@@ -11,3 +11,7 @@ frontend/dist/
 ## Wails/Frontend caches
 frontend/.vite/
 frontend/.cache/
+
+## Wails 构建产物（平台相关，不提交）
+frontend/wailsjs/
+frontend/package.json.md5
