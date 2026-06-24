@@ -11,10 +11,7 @@ import (
 	"time"
 )
 
-const (
-	apiURL     = "https://api.github.com/repos/ZephysHue/OvOproxy/releases/latest"
-	checkEvery = 12 * time.Hour
-)
+const apiURL = "https://api.github.com/repos/ZephysHue/OvOproxy/releases/latest"
 
 type ReleaseInfo struct {
 	TagName     string    `json:"tag_name"`
@@ -42,20 +39,10 @@ type CheckResult struct {
 var (
 	currentVersion = "dev"
 	latestRelease  *ReleaseInfo
-	downloadDone   = false
-	downloadPath   = ""
 )
 
 func SetVersion(v string) {
 	currentVersion = v
-}
-
-func (r *CheckResult) DownloadReady() bool {
-	return downloadDone && downloadPath != ""
-}
-
-func (r *CheckResult) DownloadPath() string {
-	return downloadPath
 }
 
 func CheckForUpdate() (*CheckResult, error) {
@@ -143,8 +130,6 @@ func DownloadUpdate(downloadURL string) (string, error) {
 		return "", fmt.Errorf("写入文件失败: %w", err)
 	}
 
-	downloadDone = true
-	downloadPath = tmpPath
 	return tmpPath, nil
 }
 
