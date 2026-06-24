@@ -60,8 +60,13 @@ func CheckForUpdate() (*CheckResult, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound {
+		// 仓库尚无 Release，不是错误
+		return &CheckResult{Current: currentVersion}, nil
+	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API 返回 HTTP %d", resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return nil, fmt.Errorf("API 返回 HTTP %d: %s", resp.StatusCode, string(body))
 	}
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1*1024*1024))
