@@ -59,6 +59,7 @@
 - import 顺序：Vue 核心 → 第三方 → wailsjs → 项目内
 - `any` 尽量不用，非用不可时加注释说明原因
 - 新增 i18n key 必须同时补中英文
+- **状态管理**：Vue 3.2 + TypeScript 4.6 下 `ref` 泛型推断偶现 `never`，复杂状态对象优先用 `reactive` 替代多个独立 `ref`
 
 ### CSS
 
@@ -122,12 +123,21 @@ type Result struct {
 
 **例外**：Go struct 有 `json:"snake_case"` tag 时，前端对应 snake_case。
 
+**三大绑定陷阱**（高频踩坑）：
+
+| 陷阱 | 现象 | 规则 |
+|------|------|------|
+| 返回类型在 `internal/` 包 | 方法从 App.d.ts 消失，前端报 `never` | **绑定返回类型必须在 main 包** |
+| struct 上挂方法 | TS 类型推断崩溃，`ref.value` 报 `never` | **绑定 struct 禁止挂方法** |
+| 字段名用 snake_case 但不加 json tag | 前后端字段名不一致，数据丢失 | **加 json tag 或用 PascalCase** |
+
 ### 新增 API
 
 1. Go 方法掛在 `*App` 上，PascalCase 命名
-2. 返回类型必须可导出（字段 PascalCase 或带 json tag）
+2. 返回类型必须可导出且**在 main 包中**
 3. `wails build` 自动重新生成 `frontend/wailsjs/`
 4. 前端 import 路径：`../../wailsjs/go/main/App`
+5. **沙箱验证**：推代码前在沙箱重建 wailsjs 桩文件跑 `vue-tsc --noEmit`
 
 ---
 
@@ -155,11 +165,12 @@ cd frontend && npx vue-tsc --noEmit
 - [ ] 窗口隐藏 → 托盘菜单恢复
 - [ ] 在线更新检测流程
 
-### 不要求
+### 在线更新调试
 
-- 不需要单元测试（单人项目，变动频繁，维护成本高于收益）
-- 不需要 lint（IDE 自带够了）
-- 不需要 CI（Windows 桌面应用，本地构建即可）
+- GitHub API **必须带 `User-Agent` 头**，否则返回 403
+- 未认证请求限 60 次/小时，设置 `GITHUB_TOKEN` 环境变量提升到 5000
+- 仓库无 Release 时 API 返回 404，代码已做容错处理
+- 测试更新流程：临时改 `build.bat` 的 `APP_VERSION` 为更早版本号编译
 
 ---
 

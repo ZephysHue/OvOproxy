@@ -5,8 +5,16 @@
 ### 在线更新
 - GitHub Releases API 检测新版本，12 小时定时检查
 - 标题栏红点气泡提示"有新版本啦，点击即可更新"
-- 后台下载 → 下载完成 → 点击重启 → 自动替换 exe 生效
+- 后台静默下载 → 下载完成 → 点击重启 → 自动替换 exe 生效
 - 设置面板新增版本号显示 + 手动检查更新按钮
+- 支持 GITHUB_TOKEN 环境变量认证（解除 60次/小时速率限制）
+
+### 在线更新修复
+- GitHub API 请求加 User-Agent 头（缺此头返回 403）
+- 仓库无 Release 时返回 404 优雅降级为"暂无新版本"
+- 返回类型从 internal 包移到 main 包（Wails 绑定无法识别 internal 包类型）
+- Struct 移除方法（Wails 误识别为 binding 导致 TS 类型崩溃）
+- Vue 更新状态改用 reactive 替代 ref（Vue 3.2 + TS 4.6 ref 泛型推断问题）
 
 ### 托盘菜单修复
 - 每个 Profile 合并为一个切换项（点击即切换启用/禁用），不再显示两份
@@ -19,6 +27,14 @@
 - 编译前强制清理前端 dist/.vite 缓存
 - ldflags 注入版本号到 exe
 - 首次构建自动初始化 release/configs/
+- Wails 升级 v2.11.0 → v2.12.0
+
+### 开发标准
+- 新增 CONTRIBUTING.md 覆盖 Git/代码/构建/对接/质量/文档全流程规范
+- AGENTS.md 扩展至 25 条规则（含 Wails 绑定三陷阱 + 构建/发布流程）
+
+### UI 修复
+- 设置弹窗小窗口溢出修复（整体滚动 + max-h-[85vh]）
 
 ## 2026-06-18
 
