@@ -53,6 +53,9 @@ func CheckForUpdate() (*CheckResult, error) {
 	}
 	req.Header.Set("User-Agent", "OvOproxy")
 	req.Header.Set("Accept", "application/vnd.github+json")
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {
