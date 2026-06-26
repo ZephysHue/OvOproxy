@@ -1,5 +1,19 @@
 # 更新日志
 
+## Unreleased
+
+### 结构优化
+- 统一代理运行核心：`cmd/proxytool` 改为复用 `internal/proxymanager`，删除重复的 `internal/proxy` 旧实现。
+- 拆分远程 hosts 订阅逻辑：新增 `internal/subscription`，`app.go` 仅保留 Wails 绑定与状态协调。
+
+### 测试补充
+- 新增 `internal/proxymanager` 测试，覆盖 HTTP 映射、直连转发和端口占用状态。
+- 新增 `internal/subscription` 测试，覆盖首次写入、无变化跳过、旧块替换、HTTP 错误、解析失败和文件不存在创建。
+
+### 工程清理
+- 清理安装器遗留的 `.agents/`、`.tokrepo/`、`TokRepo.lock`、`skills-lock.json`。
+- 删除误生成的命令输出文件 `ole]…OutputEncoding = [System.Text.Encoding]…UTF8`。
+
 ## v1.0.1 (2026-06-24)
 
 ### 在线更新

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -18,6 +17,7 @@ import (
 	"zephy/internal/config"
 	"zephy/internal/hosts"
 	"zephy/internal/proxymanager"
+	"zephy/internal/subscription"
 	"zephy/internal/update"
 	"zephy/internal/winhosts"
 )
@@ -26,19 +26,19 @@ import (
 var Version = "dev"
 
 type App struct {
-	ctx               context.Context
-	profiles          []ProfileState
-	mu                sync.RWMutex
-	exeDir            string
-	allowQuit         bool
-	proxyManager      *proxymanager.Manager
+	ctx                context.Context
+	profiles           []ProfileState
+	mu                 sync.RWMutex
+	exeDir             string
+	allowQuit          bool
+	proxyManager       *proxymanager.Manager
 	subscriptionCancel context.CancelFunc
-	refreshMu         sync.Mutex // 串行化 RefreshSubscription
-	configDirty       bool
-	configSaveCancel  context.CancelFunc
-	updateCheckCancel context.CancelFunc
-	updateReady       bool
-	updateDownloading bool
+	refreshMu          sync.Mutex // 串行化 RefreshSubscription
+	configDirty        bool
+	configSaveCancel   context.CancelFunc
+	updateCheckCancel  context.CancelFunc
+	updateReady        bool
+	updateDownloading  bool
 }
 
 type ProfileState struct {
@@ -58,7 +58,7 @@ type BackupInfo struct {
 }
 
 type SubscriptionResult struct {
-	Status     string `json:"status"`      // "ok" / "error"
+	Status     string `json:"status"` // "ok" / "error"
 	Message    string `json:"message"`
 	LastFetch  string `json:"last_fetch"`
 	EntryCount int    `json:"entry_count"`
@@ -871,9 +871,6 @@ func (a *App) ResetHostsTemplate(profileName string) error {
 
 // --- Subscription methods ---
 
-const subStartMarker = "# >>> subscription (auto-managed, do not edit)"
-const subEndMarker = "# <<< subscription"
-
 func (a *App) SetSubscription(name, url string, interval int) error {
 	a.mu.Lock()
 	found := false
@@ -935,100 +932,21 @@ func (a *App) RefreshSubscription(name string) (SubscriptionResult, error) {
 	a.refreshMu.Lock()
 	defer a.refreshMu.Unlock()
 
-	if url == "" {
-		return SubscriptionResult{Status: "error", Message: "未设置订阅 URL"}, nil
-	}
-	if !filepath.IsAbs(hostsFile) {
+	if hostsFile != "" && !filepath.IsAbs(hostsFile) {
 		hostsFile = filepath.Join(exeDir, hostsFile)
 	}
-
-	// 拉取远程内容
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Get(url)
-	if err != nil {
-		now := time.Now().Format(time.RFC3339)
-		a.updateLastFetch(name, now)
-		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("请求失败: %v", err), LastFetch: now}, nil
+	result, entries, changed := subscription.Refresh(subscription.Options{
+		URL:       url,
+		HostsPath: hostsFile,
+		Client:    &http.Client{Timeout: 30 * time.Second},
+	})
+	if result.LastFetch != "" {
+		a.updateLastFetch(name, result.LastFetch)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		now := time.Now().Format(time.RFC3339)
-		a.updateLastFetch(name, now)
-		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("HTTP %d", resp.StatusCode), LastFetch: now}, nil
+	if result.Status != "ok" || !changed {
+		return SubscriptionResult(result), nil
 	}
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 10*1024*1024)) // 10MB limit
-	if err != nil {
-		now := time.Now().Format(time.RFC3339)
-		a.updateLastFetch(name, now)
-		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("读取失败: %v", err), LastFetch: now}, nil
-	}
-
-	entries, _, err := hosts.ParseText(string(body))
-	if err != nil {
-		now := time.Now().Format(time.RFC3339)
-		a.updateLastFetch(name, now)
-		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("解析失败: %v", err), LastFetch: now}, nil
-	}
-
-	// 构建新条目行
-	newLines := make([]string, len(entries))
-	for i, e := range entries {
-		newLines[i] = fmt.Sprintf("%s %s", e.IP, e.Domain)
-	}
-	newBody := strings.Join(newLines, "\n")
-
-	// 读取现有 hosts，提取旧订阅条目行用于比对
-	existing, err := os.ReadFile(hostsFile)
-	if err != nil && !os.IsNotExist(err) {
-		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("读取本地文件失败: %v", err)}, nil
-	}
-	existingStr := string(existing)
-
-	// 查找并提取旧订阅块中的条目行
-	oldBody := extractSubBody(existingStr)
-
-	// 内容无变化则跳过写盘
-	if oldBody == newBody {
-		now := time.Now().Format(time.RFC3339)
-		a.updateLastFetch(name, now)
-		return SubscriptionResult{Status: "ok", Message: "无变化", LastFetch: now, EntryCount: len(entries)}, nil
-	}
-
-	// 构建新订阅块
-	var subLines []string
-	subLines = append(subLines, subStartMarker+" "+url)
-	subLines = append(subLines, newLines...)
-	subLines = append(subLines, subEndMarker)
-	subBlock := strings.Join(subLines, "\n") + "\n"
-
-	// 移除旧订阅块
-	startIdx := subBlockStart(existingStr)
-	if startIdx >= 0 {
-		endIdx := strings.Index(existingStr[startIdx:], subEndMarker)
-		if endIdx >= 0 {
-			endIdx += startIdx + len(subEndMarker)
-			if endIdx < len(existingStr) && existingStr[endIdx] == '\n' {
-				endIdx++
-			}
-			existingStr = existingStr[:startIdx] + existingStr[endIdx:]
-		} else {
-			existingStr = existingStr[:startIdx]
-		}
-	}
-
-	// 追加新订阅块
-	existingStr = strings.TrimRight(existingStr, "\n") + "\n\n" + subBlock
-
-	if err := os.MkdirAll(filepath.Dir(hostsFile), 0755); err != nil {
-		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("创建目录失败: %v", err)}, nil
-	}
-	if err := os.WriteFile(hostsFile, []byte(existingStr), 0644); err != nil {
-		return SubscriptionResult{Status: "error", Message: fmt.Sprintf("写入失败: %v", err)}, nil
-	}
-
-	// 更新内存中的 hosts map + 代理规则
 	a.mu.Lock()
 	for i := range a.profiles {
 		if a.profiles[i].Name == name {
@@ -1038,48 +956,13 @@ func (a *App) RefreshSubscription(name string) (SubscriptionResult, error) {
 	}
 	a.mu.Unlock()
 
-	now := time.Now().Format(time.RFC3339)
-	a.updateLastFetch(name, now)
-
-	// 如果已启用，重新写入系统 hosts
 	if isActive {
 		_ = a.StartProfile(name)
 	}
-
-	return SubscriptionResult{
-		Status:     "ok",
-		Message:    "刷新成功",
-		LastFetch:  now,
-		EntryCount: len(entries),
-	}, nil
-}
-
-// 提取 hosts 文件中订阅块的条目内容（去掉标记行），用于比对
-func extractSubBody(text string) string {
-	idx := subBlockStart(text)
-	if idx < 0 {
-		return ""
+	if result.EntryCount == 0 {
+		result.EntryCount = len(entries)
 	}
-	start := strings.Index(text[idx:], "\n")
-	if start < 0 {
-		return ""
-	}
-	start += idx + 1
-	end := strings.Index(text[start:], subEndMarker)
-	if end < 0 {
-		return ""
-	}
-	return strings.TrimSpace(text[start : start+end])
-}
-
-// 查找订阅块起始位置，兼容新旧标记
-func subBlockStart(text string) int {
-	for _, marker := range []string{subStartMarker, "# >>> subscription"} {
-		if idx := strings.Index(text, marker); idx >= 0 {
-			return idx
-		}
-	}
-	return -1
+	return SubscriptionResult(result), nil
 }
 
 func (a *App) updateLastFetch(name, timestamp string) {

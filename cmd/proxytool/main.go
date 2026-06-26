@@ -8,7 +8,7 @@ import (
 
 	"zephy/internal/config"
 	"zephy/internal/hosts"
-	"zephy/internal/proxy"
+	"zephy/internal/proxymanager"
 )
 
 func getExeDir() string {
@@ -30,6 +30,9 @@ func main() {
 	}
 
 	exeDir := getExeDir()
+	manager := proxymanager.New()
+	defer manager.StopAll()
+
 	errCh := make(chan error, len(cfg.Profiles))
 	for _, p := range cfg.Profiles {
 		hostsPath := p.HostsFile
@@ -40,10 +43,10 @@ func main() {
 		if err != nil {
 			log.Fatalf("load hosts failed for profile=%s: %v", p.Name, err)
 		}
-		s := proxy.New(p, table)
-		go func() {
-			errCh <- s.ListenAndServe()
-		}()
+		if err := manager.StartProxy(p.Name, p.ListenIP, p.Port, table.GetAll()); err != nil {
+			errCh <- err
+			continue
+		}
 	}
 
 	err = <-errCh
